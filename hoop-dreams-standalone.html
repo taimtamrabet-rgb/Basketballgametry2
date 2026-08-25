@@ -1,0 +1,2686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hoop Dreams</title>
+<style>
+:root {
+  --bg: #0f1720;
+  --panel: #16212c;
+  --panel-alt: #1c2a37;
+  --border: #2a3a48;
+  --text: #e8edf2;
+  --text-dim: #9db0bf;
+  --accent: #ff7a29;
+  --accent-dim: #c95f1e;
+  --navy: #2c4a7c;
+  --win: #2fbf71;
+  --loss: #e2504a;
+  --gold: #f2c14e;
+  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: linear-gradient(180deg, var(--bg), #0a0f15);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+#app { max-width: 900px; margin: 0 auto; padding: 24px 16px 60px; }
+
+#fullscreen-toggle {
+  position: fixed; top: 10px; right: 10px; z-index: 1000;
+  background: var(--panel-alt); color: var(--text); border: 1px solid var(--border);
+  width: 38px; height: 38px; border-radius: 8px; font-size: 1.2rem; line-height: 1; cursor: pointer;
+}
+#fullscreen-toggle:hover { border-color: var(--accent); }
+:fullscreen, :-webkit-full-screen { background: var(--bg); }
+
+h1, h2, h3, h4 { font-family: inherit; margin: 0.4em 0 0.3em; }
+h1 { color: var(--accent); }
+p { line-height: 1.5; color: var(--text); }
+.subtitle { color: var(--text-dim); margin-top: -8px; }
+
+.screen { animation: fadein 0.2s ease-in; }
+@keyframes fadein { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* Buttons */
+button { font-family: inherit; cursor: pointer; border-radius: 8px; border: none; }
+.primary-btn {
+  background: var(--accent); color: #1a0f05; font-weight: 700; font-size: 1rem;
+  padding: 12px 22px; margin: 14px 0; display: inline-block;
+}
+.primary-btn:hover:not(:disabled) { background: #ff8c47; }
+.primary-btn:disabled { background: #6b5236; color: #a89478; cursor: not-allowed; }
+.secondary-btn {
+  background: var(--panel-alt); color: var(--text); border: 1px solid var(--border);
+  padding: 12px 22px; margin: 14px 0 14px 10px;
+}
+.secondary-btn:hover { border-color: var(--accent); }
+.small-btn {
+  background: var(--panel-alt); color: var(--text); border: 1px solid var(--border);
+  width: 28px; height: 28px; font-size: 1rem;
+}
+.small-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.choice-column { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+
+/* Creation */
+.create-form { display: flex; flex-direction: column; gap: 10px; max-width: 420px; margin: 12px 0 20px; }
+.create-form label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: var(--text-dim); }
+.create-form input {
+  background: var(--panel); border: 1px solid var(--border); color: var(--text);
+  padding: 10px 12px; border-radius: 6px; font-size: 1rem;
+}
+.position-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.position-card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; cursor: pointer;
+}
+.position-card:hover { border-color: var(--accent-dim); }
+.position-card.selected { border-color: var(--accent); background: var(--panel-alt); }
+.position-card h3 { margin-top: 0; color: var(--accent); }
+.pos-detail { color: var(--text-dim); font-size: 0.8rem; margin: 4px 0 0; }
+
+.pool-counter { font-size: 0.9rem; color: var(--gold); margin-left: 10px; }
+.star-rating { color: var(--gold); font-size: 1.1rem; letter-spacing: 1px; margin: 6px 0; }
+.star-caption { color: var(--text-dim); font-size: 0.75rem; letter-spacing: normal; margin-left: 6px; }
+.alloc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px 20px; margin-bottom: 10px; }
+.alloc-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+.alloc-label { flex: 1; color: var(--text-dim); }
+.alloc-value { width: 26px; text-align: center; font-weight: 700; }
+
+/* Stats panel */
+.stats-panel { margin-top: 18px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+.stat-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+.stat-label { width: 130px; color: var(--text-dim); font-size: 0.85rem; }
+.stat-bar { flex: 1; height: 8px; background: var(--panel-alt); border-radius: 4px; overflow: hidden; }
+.stat-bar-fill { height: 100%; background: linear-gradient(90deg, var(--navy), var(--accent)); }
+.stat-value { width: 28px; text-align: right; font-weight: 700; }
+
+/* Hub header */
+.hub-header {
+  display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; margin-bottom: 14px;
+}
+.hub-header h2 { margin: 0; }
+.pos-badge { background: var(--navy); color: var(--text); font-size: 0.7rem; padding: 2px 8px; border-radius: 20px; margin-left: 8px; vertical-align: middle; }
+.hub-meta { text-align: right; font-size: 0.9rem; color: var(--text-dim); }
+.hub-meta p { margin: 2px 0; }
+
+.energy-wrap { min-width: 160px; }
+.energy-label { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 3px; }
+.energy-bar { height: 8px; background: var(--panel-alt); border-radius: 4px; overflow: hidden; }
+.energy-bar-fill { height: 100%; }
+.energy-ok { background: var(--win); }
+.energy-low { background: var(--gold); }
+.energy-critical { background: var(--loss); }
+
+/* Narrative / game preview */
+.narrative-box, .game-preview, .action-panel {
+  background: var(--panel); border-left: 3px solid var(--accent-dim); border-radius: 6px;
+  padding: 12px 16px; margin: 10px 0;
+}
+.narrative-box p { margin: 0 0 6px; }
+.narrative-choice-made { color: var(--gold); font-size: 0.85rem; }
+.choice-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.choice-btn {
+  background: var(--panel-alt); color: var(--text); border: 1px solid var(--border);
+  padding: 8px 14px; border-radius: 6px; font-size: 0.9rem;
+}
+.choice-btn.selected { border-color: var(--accent); background: #3a2a1a; }
+.game-preview.bye { border-left-color: var(--text-dim); color: var(--text-dim); }
+
+/* Training sessions */
+.session-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 6px; }
+.session-card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; cursor: pointer;
+}
+.session-card h4 { margin: 0 0 4px; color: var(--accent); font-size: 0.95rem; }
+.session-card p { margin: 0; font-size: 0.8rem; color: var(--text-dim); }
+.session-card.selected { border-color: var(--accent); background: var(--panel-alt); }
+.session-card.disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Game results */
+.game-result { border-radius: 10px; padding: 14px 18px; margin: 12px 0; border: 1px solid var(--border); background: var(--panel); }
+.game-result.win { border-color: var(--win); }
+.game-result.loss { border-color: var(--loss); }
+.boxscore { border-collapse: collapse; margin-top: 8px; }
+.boxscore td { padding: 4px 10px; border: 1px solid var(--border); font-size: 0.9rem; }
+.boxscore td:nth-child(odd) { color: var(--text-dim); font-weight: 600; }
+.badge-row { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+.badge { background: var(--gold); color: #2a1e00; font-size: 0.75rem; padding: 3px 9px; border-radius: 20px; font-weight: 700; }
+
+.training-log p { margin: 3px 0; font-size: 0.9rem; color: var(--text-dim); }
+
+.toast-block { margin: 10px 0; }
+.toast {
+  background: #2a2410; border: 1px solid var(--gold); border-radius: 6px; padding: 8px 12px;
+  margin: 6px 0; font-size: 0.9rem;
+}
+
+.banquet-block { background: var(--panel-alt); border-radius: 10px; padding: 14px 18px; margin: 14px 0; border: 1px solid var(--border); }
+.banquet-block ul { margin: 8px 0 0; padding-left: 20px; }
+.goal-done { color: var(--win); }
+.goal-missed { color: var(--text-dim); }
+
+.offer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin: 14px 0; }
+.offer-card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; cursor: pointer; }
+.offer-card:hover { border-color: var(--accent); }
+.offer-card h3 { margin: 0 0 4px; color: var(--accent); }
+
+/* Retirement / career summary */
+.retirement-screen h1 { font-size: 1.6rem; }
+.career-table { border-collapse: collapse; margin: 14px 0; width: 100%; max-width: 480px; }
+.career-table th, .career-table td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; font-size: 0.9rem; }
+.career-table th { background: var(--panel-alt); }
+.award-list { padding-left: 20px; }
+.award-list li { margin: 3px 0; }
+
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ---- data.js ---- */
+/* ============================================================
+   Hoop Dreams — content & config
+   All schools, colleges, and pro teams are fictional.
+   ============================================================ */
+"use strict";
+
+const STAT_KEYS = ["shooting", "handles", "passing", "defense", "rebounding", "speed", "iq", "clutch"];
+
+const STAT_LABELS = {
+  shooting: "Shooting",
+  handles: "Ballhandling",
+  passing: "Passing",
+  defense: "Defense",
+  rebounding: "Rebounding",
+  speed: "Speed",
+  iq: "Basketball IQ",
+  clutch: "Clutch"
+};
+
+const STAT_DESCRIPTIONS = {
+  shooting: "Scoring touch on jumpers, mid-range, and free throws.",
+  handles: "Ballhandling and finishing through traffic; keeps turnovers down.",
+  passing: "Playmaking vision that sets up teammates.",
+  defense: "Steals, blocks, and containing your matchup.",
+  rebounding: "Box-outs and effort on the glass.",
+  speed: "First step, transition, and closing out.",
+  iq: "Decision-making. Reduces bad possessions and steadies your performance.",
+  clutch: "Composure in big moments and close games."
+};
+
+const STAT_MIN_START = 25;
+const STAT_MAX_START = 65;
+const STAT_BASE_START = 40;
+const CREATION_POOL = 60;
+const STAT_CAP = 99;
+const STAT_FLOOR = 15;
+
+/* Recruiting/draft stock (0-100) -> a 1-5 star rating. Weighted so 5-star is rare. */
+const STAR_BREAKPOINTS = [
+  { min: 90, stars: 5 },
+  { min: 75, stars: 4 },
+  { min: 55, stars: 3 },
+  { min: 35, stars: 2 },
+  { min: 0, stars: 1 }
+];
+
+/* Player-chosen starting hype at character creation. Sets the point-buy pool size. */
+const CREATION_STAR_TIERS = [
+  { stars: 1, label: "Unranked", blurb: "Nobody's heard of you yet. Every point earned the hard way.", pool: 40 },
+  { stars: 2, label: "Under the Radar", blurb: "A modest local reputation, nothing more.", pool: 50 },
+  { stars: 3, label: "Solid Prospect", blurb: "A dependable, well-rounded incoming freshman.", pool: 60 },
+  { stars: 4, label: "Highly Regarded", blurb: "Scouts are already circling your name.", pool: 75 },
+  { stars: 5, label: "Five-Star Phenom", blurb: "The hype is real before you've played a single game.", pool: 90 }
+];
+
+const POSITIONS = {
+  PG: { key: "PG", name: "Point Guard", primary: ["passing", "handles", "iq"], secondary: ["speed", "shooting"], scoreWeight: 0.92,
+    blurb: "Runs the offense, sets the tempo, and has the ball in crunch time." },
+  SG: { key: "SG", name: "Shooting Guard", primary: ["shooting", "speed", "handles"], secondary: ["iq", "defense"], scoreWeight: 1.15,
+    blurb: "The scorer. Comes off screens looking to fill it up." },
+  SF: { key: "SF", name: "Small Forward", primary: ["shooting", "defense", "rebounding"], secondary: ["speed", "iq"], scoreWeight: 1.02,
+    blurb: "Does a bit of everything on both ends of the floor." },
+  PF: { key: "PF", name: "Power Forward", primary: ["rebounding", "defense", "shooting"], secondary: ["iq", "clutch"], scoreWeight: 0.95,
+    blurb: "Battles inside, cleans the glass, and finishes around the rim." },
+  C: { key: "C", name: "Center", primary: ["rebounding", "defense", "iq"], secondary: ["shooting", "clutch"], scoreWeight: 0.85,
+    blurb: "The anchor. Protects the rim and controls the paint." }
+};
+
+/* ---------------- Energy / pacing config ---------------- */
+const ENERGY_MAX = 100;
+const ENERGY_CONFIG = {
+  hsWeeklyRegen: 34,
+  collegeWeeklyRegen: 55,
+  proWeeklyRegen: 60,
+  lowThreshold: 35,
+  veryLowThreshold: 20,
+  lowMult: 0.92,
+  veryLowMult: 0.8,
+  tweakInjuryChance: 0.06
+};
+
+/* ---------------- Training catalog (HS + offseason use) ---------------- */
+const TRAINING_CATALOG = [
+  { id: "shooting_drills", name: "Shooting Drills", statKey: "shooting", min: 2, max: 4, cost: 10, desc: "Reps from the elbow, corner, and the line." },
+  { id: "ballhandling", name: "Ballhandling Circuit", statKey: "handles", min: 2, max: 4, cost: 10, desc: "Cone drills and two-ball work." },
+  { id: "vision_passing", name: "Vision & Passing Work", statKey: "passing", min: 2, max: 4, cost: 10, desc: "Reading the defense, live outlet passing." },
+  { id: "defensive_slides", name: "Defensive Slides", statKey: "defense", min: 2, max: 4, cost: 11, desc: "Closeouts, slides, and film on your matchup." },
+  { id: "boxout_post", name: "Box-Out & Post Work", statKey: "rebounding", min: 2, max: 4, cost: 11, desc: "Positioning drills and post footwork." },
+  { id: "sprint_conditioning", name: "Sprint Conditioning", statKey: "speed", min: 2, max: 4, cost: 13, desc: "Suicides, ladders, and full-court sprints." },
+  { id: "film_study", name: "Film Study", statKey: "iq", min: 2, max: 4, cost: 6, desc: "Breaking down tape with the coaching staff." },
+  { id: "free_throw_reps", name: "Free Throw & Poise Reps", statKey: "dual_shoot_clutch", min: 1, max: 2, cost: 6, desc: "Free throws under simulated pressure." },
+  { id: "scrimmage", name: "Scrimmage vs. Upperclassmen", statKey: "random_two", min: 1, max: 2, cost: 17, desc: "Live full-speed run with the varsity group." },
+  { id: "rest_recovery", name: "Rest & Recovery", statKey: "rest", min: 0, max: 0, cost: 0, desc: "Take the day to recover. No gains, but you'll need it." }
+];
+
+/* ---------------- HS schools ---------------- */
+const HS_OPPONENTS = [
+  "Eastbrook Eagles", "Riverside Ravens", "Millbrook Lions", "Fairview Falcons",
+  "Kingsway Knights", "Lincoln Park Tigers", "Oakhurst Hawks", "Brentwood Bears", "Ironwood Timberwolves"
+];
+const HS_RIVAL_SCHOOL = "Cedar Ridge Cougars";
+const HS_RIVAL_PLAYER_NAME = "Dante Marsh";
+const DEFAULT_TEAM_NAME = "Northgate High Wolves";
+
+const HS_YEAR_LABELS = { 1: "Freshman", 2: "Sophomore", 3: "Junior", 4: "Senior" };
+
+/* Regular-season base difficulty ratings (index 0-7), scaled up per year in engine */
+const HS_BASE_OPPONENT_RATINGS = [38, 41, 44, 47, 50, 54, 57, 60];
+const HS_RIVAL_BASE_RATING = 58;
+const HS_PLAYOFF_BASE_RATINGS = { district: 56, regional: 63, semis: 70, final: 76 };
+
+/* ---------------- HS narrative events ---------------- */
+/* effect: {statKey, delta} or {energy, delta} or null (flavor only). choices are optional. */
+const HS_NARRATIVE_EVENTS = [
+  { id: "tryout_nerves", years: [1], text: "The gym is packed with hopefuls on the first day of tryouts. Your stomach is in knots.",
+    choices: [
+      { label: "Play it loose, have fun out there", effect: { statKey: "clutch", delta: 2 } },
+      { label: "Lock in and prove yourself immediately", effect: { statKey: "iq", delta: 2 } }
+    ] },
+  { id: "first_day_lost", years: [1], text: "You take a wrong turn and show up to your first class five minutes late. A junior points you toward the gym after school instead.", effect: null },
+  { id: "equipment_duty", years: [1], text: "As the new player, you're on ball-rack duty after practice. The upperclassmen needle you about it, but it's all in good fun.",
+    choices: [
+      { label: "Laugh it off and do it well", effect: { energy: -3 } },
+      { label: "Ask a teammate to split the job", effect: { statKey: "passing", delta: 1 } }
+    ] },
+  { id: "picture_day", years: [1, 2], text: "Team picture day. You forget your jersey is inside out until the photographer points it out.", effect: null },
+  { id: "first_pep_rally", years: [1], text: "The whole school packs the gym for the fall pep rally. Hearing your name announced with the roster gives you chills.", effect: { statKey: "clutch", delta: 1 } },
+  { id: "mentor_intro", years: [1, 2], text: "A senior on the team takes you under their wing, staying after practice to work on your game.", effect: { statKey: "iq", delta: 2 } },
+  { id: "midterms_week", years: [1, 2, 3, 4], text: "Midterms hit hard this week. Balancing homework with practice is rough.",
+    choices: [
+      { label: "Pull a late study night", effect: { energy: -8 } },
+      { label: "Cut a study session short to rest up", effect: { energy: 4 } }
+    ] },
+  { id: "coach_film_callout", years: [1, 2, 3, 4], text: "Coach freezes the film on a possession where you missed a rotation, calling it out in front of everyone.",
+    choices: [
+      { label: "Take it on the chin and lock in", effect: { statKey: "defense", delta: 2 } },
+      { label: "Brush it off", effect: null }
+    ] },
+  { id: "teammate_conflict", years: [1, 2, 3, 4], text: "You and a teammate argue over who should be taking the last shot in close games.",
+    choices: [
+      { label: "Talk it out after practice", effect: { statKey: "passing", delta: 1 } },
+      { label: "Let your play do the talking", effect: { statKey: "clutch", delta: 1 } }
+    ] },
+  { id: "sibling_at_game", years: [1, 2, 3, 4], text: "Your little sibling begs to come to the next home game and won't stop talking about it all week.", effect: { statKey: "clutch", delta: 1 } },
+  { id: "snow_day", years: [1, 2, 3, 4], text: "A snow day cancels practice. Extra rest, but also extra time sitting around.", effect: { energy: 10 } },
+  { id: "local_paper", years: [2, 3, 4], text: "The local paper runs a short write-up mentioning your game. Your phone won't stop buzzing.", effect: { statKey: "clutch", delta: 1 } },
+  { id: "homecoming", years: [1, 2, 3, 4], text: "Homecoming week. The halls are decorated and everyone's talking about the dance Friday.",
+    choices: [
+      { label: "Go and have a good time", effect: { energy: -6 } },
+      { label: "Stay in and rest for the game", effect: { energy: 6 } }
+    ] },
+  { id: "holiday_tournament", years: [1, 2, 3, 4], text: "The team piles onto a bus for a holiday tournament out of town. Hotel rooms, bad vending-machine food, and a lot of team bonding.", effect: { statKey: "passing", delta: 1 } },
+  { id: "weight_room", years: [2, 3, 4], text: "The strength coach has you in the weight room early mornings this week.", effect: { statKey: "rebounding", delta: 2 } },
+  { id: "part_time_job", years: [2, 3, 4], text: "A friend offers you shifts at their part-time job that overlap with open gym.",
+    choices: [
+      { label: "Turn it down, ball comes first", effect: { statKey: "shooting", delta: 1 } },
+      { label: "Take a couple shifts anyway", effect: { energy: -5 } }
+    ] },
+  { id: "scout_in_stands", years: [3, 4], text: "You notice a college coach with a clipboard in the third row. Word travels fast through the gym.", effect: { statKey: "clutch", delta: 2 } },
+  { id: "prom_night", years: [3, 4], text: "Prom lands in the middle of the season this year. It's the talk of the whole school.",
+    choices: [
+      { label: "Go all out", effect: { energy: -8 } },
+      { label: "Keep it low-key", effect: { energy: -2 } }
+    ] },
+  { id: "ap_exam_crunch", years: [3, 4], text: "AP exam prep is eating into your evenings this week.", effect: { energy: -5 } },
+  { id: "senior_night", years: [4], text: "Senior Night. Your name gets called over the PA with your family walking you to half court before tip-off.", effect: { statKey: "clutch", delta: 3 } },
+  { id: "recruiting_letters", years: [4], text: "A stack of recruiting letters is waiting on the kitchen table when you get home.", effect: null },
+  { id: "signing_day_buzz", years: [4], text: "Teammates keep asking where you're leaning for college. You haven't decided yet.", effect: null },
+  { id: "graduation_approaching", years: [4], text: "Graduation is closing in fast. It's strange to think this is your last stretch of games in this gym.", effect: { statKey: "iq", delta: 1 } },
+  { id: "last_ride_speech", years: [4], text: "Coach gathers the team for a quiet pregame talk about making these last games count.", effect: { statKey: "clutch", delta: 2 } },
+  { id: "rival_trash_talk", years: [1, 2, 3, 4], text: "Word gets back to you that Cedar Ridge has been talking trash ahead of Rivalry Night.",
+    choices: [
+      { label: "Use it as motivation", effect: { statKey: "clutch", delta: 2 } },
+      { label: "Ignore it completely", effect: null }
+    ] },
+  { id: "benched_attitude", years: [1, 2, 3, 4], text: "Coach sits you for the first few minutes of practice after a bad attitude the day before.", effect: { energy: -4 } },
+  { id: "praised_by_coach", years: [1, 2, 3, 4], text: "Coach singles you out in the locker room for your effort in practice this week.", effect: { statKey: "iq", delta: 1 } },
+  { id: "tweak_ankle", years: [1, 2, 3, 4], text: "You roll an ankle a little in practice. Trainers say it's minor, but it's sore.", effect: { energy: -10 } },
+  { id: "bus_ride_bonding", years: [1, 2, 3, 4], text: "A long bus ride back from an away game turns into card games and bad singing with the team.", effect: { statKey: "passing", delta: 1 } },
+  { id: "community_event", years: [1, 2, 3, 4], text: "The team volunteers running a youth basketball clinic on Saturday morning.", effect: { statKey: "clutch", delta: 1 } },
+  { id: "injury_scare_cleared", years: [1, 2, 3, 4], text: "A hard fall in practice had everyone worried for a second, but you're cleared to play.", effect: null }
+];
+
+/* ---------------- HS achievements ---------------- */
+const HS_ACHIEVEMENTS = [
+  { id: "hs_first_start", stage: "hs", name: "First Start", desc: "Start your first varsity game." },
+  { id: "hs_double_double", stage: "hs", name: "Double-Double", desc: "Record a double-double in a game." },
+  { id: "hs_twenty", stage: "hs", name: "20-Point Game", desc: "Score 20+ points in a game." },
+  { id: "hs_thirty", stage: "hs", name: "30-Point Game", desc: "Score 30+ points in a game." },
+  { id: "hs_triple_double", stage: "hs", name: "Triple-Double", desc: "Record a triple-double." },
+  { id: "hs_five_steals", stage: "hs", name: "Pickpocket", desc: "Record 5+ steals in a game." },
+  { id: "hs_five_blocks", stage: "hs", name: "Wall Up", desc: "Record 5+ blocks in a game." },
+  { id: "hs_buzzer_beater", stage: "hs", name: "Buzzer Beater", desc: "Hit a game-winning shot at the buzzer." },
+  { id: "hs_rival_slayer", stage: "hs", name: "Rival Slayer", desc: "Beat Cedar Ridge on Rivalry Night." },
+  { id: "hs_state_champion", stage: "hs", name: "State Champion", desc: "Win the state championship." },
+  { id: "hs_iron_freshman", stage: "hs", name: "Never Missed a Beat", desc: "Finish a season without ever playing exhausted." }
+];
+
+/* ---------------- College content ---------------- */
+const COLLEGE_TIERS = {
+  powerhouse: { key: "powerhouse", label: "National Powerhouse", rating: 84, spread: 5 },
+  major: { key: "major", label: "Major Conference", rating: 73, spread: 5 },
+  midmajor: { key: "midmajor", label: "Mid-Major", rating: 62, spread: 5 },
+  small: { key: "small", label: "Small College", rating: 50, spread: 5 },
+  walkon: { key: "walkon", label: "Walk-On", rating: 44, spread: 4 }
+};
+
+const COLLEGE_PROGRAMS = [
+  { name: "Cascadia University Timberwolves", tier: "powerhouse" },
+  { name: "Prairie State Bison", tier: "powerhouse" },
+  { name: "Atlantic Tech Sharks", tier: "powerhouse" },
+  { name: "Sunbelt A&M Hurricanes", tier: "powerhouse" },
+  { name: "Lakeshore University Mariners", tier: "major" },
+  { name: "Ridgeview State Cougars", tier: "major" },
+  { name: "Delta Valley Rams", tier: "major" },
+  { name: "Northfield University Comets", tier: "major" },
+  { name: "Harbor College Pelicans", tier: "midmajor" },
+  { name: "Redstone University Miners", tier: "midmajor" },
+  { name: "Union City Crusaders", tier: "midmajor" },
+  { name: "Pinecrest College Foxes", tier: "small" },
+  { name: "Maple Grove University Otters", tier: "small" },
+  { name: "Copper Canyon State Roadrunners", tier: "small" },
+  { name: "Willow Creek Community College Hornets", tier: "walkon" },
+  { name: "Granite Falls State Prospectors", tier: "walkon" },
+  { name: "East Hollow College Drifters", tier: "walkon" }
+];
+
+const COLLEGE_ACHIEVEMENTS = [
+  { id: "col_debut_dd", stage: "college", name: "College Debut Double-Double", desc: "Record a double-double in your college debut." },
+  { id: "col_forty", stage: "college", name: "40-Point Outburst", desc: "Score 40+ points in a college game." },
+  { id: "col_tourney_hero", stage: "college", name: "Tournament Hero", desc: "Hit a game-winner in the national tournament." },
+  { id: "col_natl_champion", stage: "college", name: "National Champion", desc: "Win the national championship." },
+  { id: "col_conf_poy", stage: "college", name: "Conference Player of the Year", desc: "Win Conference Player of the Year." },
+  { id: "col_declare", stage: "college", name: "Declared", desc: "Declare for the professional draft." }
+];
+
+const COLLEGE_STORY_BEATS = [
+  { id: "col_dorm_life", text: "Dorm life takes some adjusting — a roommate, a meal plan, and a lot less structure than high school." },
+  { id: "col_coursework", text: "Balancing coursework with the demands of a full college schedule is a grind this term." },
+  { id: "col_coach_relationship", text: "Your coach pulls you aside to talk about your role heading into conference play." },
+  { id: "col_draft_buzz", text: "Draft analysts start mentioning your name in early mock write-ups." },
+  { id: "col_hometown_visit", text: "You make it back home for a weekend and everyone wants to talk about the season." },
+  { id: "col_leadership", text: "Underclassmen on the roster start looking to you for leadership." },
+  { id: "col_media_day", text: "Media day brings a swarm of local reporters asking about your goals for the year." },
+  { id: "col_rival_buildup", text: "The campus is buzzing ahead of the rivalry matchup this week." }
+];
+
+/* ---------------- Pro content ---------------- */
+const PRO_TEAMS = [
+  { name: "Bay City Current", tierRating: 80 }, { name: "Portland Timber", tierRating: 70 },
+  { name: "Chicago Steel", tierRating: 76 }, { name: "Brooklyn Voltage", tierRating: 64 },
+  { name: "Austin Comets", tierRating: 58 }, { name: "Denver Peaks", tierRating: 72 },
+  { name: "Phoenix Scorch", tierRating: 68 }, { name: "Seattle Rain", tierRating: 55 },
+  { name: "Miami Tide", tierRating: 78 }, { name: "Atlanta Pulse", tierRating: 60 },
+  { name: "Detroit Forge", tierRating: 52 }, { name: "Minneapolis Frost", tierRating: 62 },
+  { name: "Dallas Mustangs", tierRating: 74 }, { name: "Sacramento Gold", tierRating: 56 },
+  { name: "Cleveland Ironmen", tierRating: 50 }, { name: "New Orleans Krewe", tierRating: 65 }
+];
+
+const PRO_ACHIEVEMENTS = [
+  { id: "pro_debut", stage: "pro", name: "Pro Debut", desc: "Play in your first professional game." },
+  { id: "pro_all_star", stage: "pro", name: "All-Star", desc: "Get selected as an All-Star." },
+  { id: "pro_scoring_champ", stage: "pro", name: "Scoring Champion", desc: "Lead the league in scoring for a season." },
+  { id: "pro_mvp", stage: "pro", name: "Most Valuable Player", desc: "Win the league MVP award." },
+  { id: "pro_dpoy", stage: "pro", name: "Defensive Player of the Year", desc: "Win Defensive Player of the Year." },
+  { id: "pro_roy", stage: "pro", name: "Rookie of the Year", desc: "Win Rookie of the Year." },
+  { id: "pro_finals", stage: "pro", name: "Finals Appearance", desc: "Reach the league finals." },
+  { id: "pro_champion", stage: "pro", name: "League Champion", desc: "Win a championship." },
+  { id: "pro_fifty", stage: "pro", name: "50-Point Game", desc: "Score 50+ points in a pro game." },
+  { id: "pro_triple_double", stage: "pro", name: "Pro Triple-Double", desc: "Record a triple-double as a pro." },
+  { id: "pro_ten_year", stage: "pro", name: "Ten-Year Veteran", desc: "Complete a 10th professional season." },
+  { id: "pro_hof", stage: "pro", name: "Hall of Fame", desc: "Get inducted into the Hall of Fame." }
+];
+
+const PRO_STORY_BEATS = [
+  { id: "pro_trade_rumor", text: "Trade rumors swirl around the team all week, though nothing comes of it." },
+  { id: "pro_contract_talk", text: "Your agent mentions the front office has quietly opened extension talks." },
+  { id: "pro_mentor_rookie", text: "A rookie on the roster keeps peppering you with questions after practice." },
+  { id: "pro_media_day", text: "Media day features the usual round of highlight-reel questions and season predictions." },
+  { id: "pro_rivalry_building", text: "A budding rivalry with an opposing star is starting to get media attention." },
+  { id: "pro_injury_scare", text: "A scary-looking fall draws a gasp from the arena, but you're able to walk it off." },
+  { id: "pro_legacy_talk", text: "A reporter asks how you'd like to be remembered when it's all said and done." },
+  { id: "pro_offseason_grind", text: "You spend the offseason in the gym before anyone else is back in the building." },
+  { id: "pro_community", text: "You host a youth clinic in the offseason, packed with kids wearing your jersey number." },
+  { id: "pro_free_agency_buzz", text: "Free agency chatter links your name to a handful of other teams." }
+];
+
+const PRO_AWARDS = ["All-Star", "All-League Team", "MVP", "Defensive Player of the Year", "Rookie of the Year", "Scoring Champion", "Finals MVP", "League Champion"];
+
+/* ---------------- Perks (auto-generated from stats + energy) ---------------- */
+const PERKS = {};
+STAT_KEYS.forEach(k => {
+  PERKS["perk_" + k] = { id: "perk_" + k, name: STAT_LABELS[k] + " Edge", desc: "+1 " + STAT_LABELS[k] + " (permanent).", effect: { statKey: k, delta: 1 } };
+});
+PERKS["perk_energy_max"] = { id: "perk_energy_max", name: "Deep Tank", desc: "Maximum energy +5 (permanent).", effect: { energyMax: 5 } };
+PERKS["perk_energy_regen"] = { id: "perk_energy_regen", name: "Recovery Edge", desc: "Weekly energy regen +4 (permanent).", effect: { energyRegen: 4 } };
+
+const ALL_ACHIEVEMENTS = [...HS_ACHIEVEMENTS, ...COLLEGE_ACHIEVEMENTS, ...PRO_ACHIEVEMENTS];
+
+/* ---------------- Season goal templates (HS) ---------------- */
+const HS_GOAL_TEMPLATES = [
+  { id: "goal_primary_stat", name: "Sharpen Your Edge", statTarget: "primary0", valueByYear: [55, 65, 75, 83], rewardPerk: "auto_primary" },
+  { id: "goal_win_count", name: "Team Success", valueByYear: [4, 5, 6, 7], rewardPerk: "perk_iq" },
+  { id: "goal_rival", name: "Rivalry Domination", rewardPerk: "perk_clutch" },
+  { id: "goal_playoff", name: "Postseason Push", stageByYear: ["district", "regional", "semis", "final"], rewardPerk: "auto_secondary" },
+  { id: "goal_pb", name: "Career Night", rewardPerk: "perk_shooting" }
+];
+
+
+/* ---- engine-core.js ---- */
+/* ============================================================
+   Hoop Dreams — core simulation primitives shared by every stage
+   ============================================================ */
+"use strict";
+
+/* ---------------- RNG helpers ---------------- */
+const RNG = {
+  float(min, max) { return min + Math.random() * (max - min); },
+  int(min, max) { return Math.floor(this.float(min, max + 1)); },
+  chance(p) { return Math.random() < p; },
+  choice(arr) { return arr[Math.floor(Math.random() * arr.length)]; },
+  gauss(mean, std) {
+    let u = 0, v = 0;
+    while (u === 0) u = Math.random();
+    while (v === 0) v = Math.random();
+    const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    return mean + z * std;
+  },
+  weighted(items, weightFn) {
+    const total = items.reduce((s, it) => s + weightFn(it), 0);
+    let r = Math.random() * total;
+    for (const it of items) { r -= weightFn(it); if (r <= 0) return it; }
+    return items[items.length - 1];
+  }
+};
+
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+/* ---------------- Stats ---------------- */
+function newStatBlock() {
+  const s = {};
+  STAT_KEYS.forEach(k => s[k] = STAT_BASE_START);
+  return s;
+}
+
+function bumpStat(stats, key, delta) {
+  if (!STAT_KEYS.includes(key)) return;
+  stats[key] = clamp(stats[key] + delta, STAT_FLOOR, STAT_CAP);
+}
+
+/* Convert a 0-100 recruiting/draft stock into a 1-5 star rating. */
+function stockToStars(stock) {
+  for (const tier of STAR_BREAKPOINTS) {
+    if (stock >= tier.min) return tier.stars;
+  }
+  return 1;
+}
+
+/* Weighted composite rating (0-99ish) for a position given a stat block */
+function statPower(stats, position) {
+  let total = 0, weight = 0;
+  STAT_KEYS.forEach(k => {
+    let w = 0.55;
+    if (position.primary.includes(k)) w = 1.6;
+    else if (position.secondary.includes(k)) w = 1.05;
+    total += stats[k] * w;
+    weight += w;
+  });
+  return total / weight;
+}
+
+/* ---------------- Energy ---------------- */
+function fatigueMultiplier(energy) {
+  if (energy < ENERGY_CONFIG.veryLowThreshold) return { mult: ENERGY_CONFIG.veryLowMult, tag: "veryLow" };
+  if (energy < ENERGY_CONFIG.lowThreshold) return { mult: ENERGY_CONFIG.lowMult, tag: "low" };
+  return { mult: 1.0, tag: "normal" };
+}
+
+function applyEnergyDelta(player, delta) {
+  const max = ENERGY_MAX + (player.perkEnergyMaxBonus || 0);
+  player.energy = clamp(player.energy + delta, 0, max);
+  return player.energy;
+}
+
+function weeklyRegen(player, baseRegen) {
+  const regen = baseRegen + (player.perkEnergyRegenBonus || 0);
+  applyEnergyDelta(player, regen);
+}
+
+/* ---------------- Training ---------------- */
+function generateWeeklyPool(count) {
+  const rest = TRAINING_CATALOG.find(t => t.id === "rest_recovery");
+  const others = TRAINING_CATALOG.filter(t => t.id !== "rest_recovery");
+  const shuffled = [...others].sort(() => Math.random() - 0.5);
+  return [rest, ...shuffled.slice(0, count)];
+}
+
+/* Applies one training session to player.stats / energy. Returns a log line.
+   costScale multiplies energy cost; gainMult multiplies stat gains (used to compress
+   fewer, higher-stakes college/pro training blocks into bigger jumps). */
+function applyTrainingSession(player, sessionId, costScale, gainMult) {
+  costScale = costScale || 1;
+  gainMult = gainMult || 1;
+  const def = TRAINING_CATALOG.find(t => t.id === sessionId);
+  if (!def) return null;
+  const cost = Math.round(def.cost * costScale);
+  applyEnergyDelta(player, -cost);
+
+  if (def.statKey === "rest") {
+    applyEnergyDelta(player, Math.round(18 * costScale));
+    return { name: def.name, detail: "Recovered energy." };
+  }
+  if (def.statKey === "dual_shoot_clutch") {
+    const g1 = Math.round(RNG.int(def.min, def.max) * gainMult), g2 = Math.round(RNG.int(def.min, def.max) * gainMult);
+    bumpStat(player.stats, "shooting", g1);
+    bumpStat(player.stats, "clutch", g2);
+    return { name: def.name, detail: `+${g1} Shooting, +${g2} Clutch` };
+  }
+  if (def.statKey === "random_two") {
+    const picks = [...STAT_KEYS].sort(() => Math.random() - 0.5).slice(0, 2);
+    const gains = picks.map(k => { const g = Math.round(RNG.int(def.min, def.max) * gainMult); bumpStat(player.stats, k, g); return `+${g} ${STAT_LABELS[k]}`; });
+    return { name: def.name, detail: gains.join(", ") };
+  }
+  const gain = Math.round(RNG.int(def.min, def.max) * gainMult);
+  bumpStat(player.stats, def.statKey, gain);
+  return { name: def.name, detail: `+${gain} ${STAT_LABELS[def.statKey]}` };
+}
+
+const STAT_BOXSCORE_KEYS = ["points", "rebounds", "assists", "steals", "blocks", "turnovers"];
+
+/* Simulate a block of N games abstractly (used for a condensed conference/regular-season
+   slate) without per-game energy cost. Returns aggregate win/loss + averaged box score. */
+function simulateGameBlock(player, position, context, count) {
+  let wins = 0, losses = 0;
+  const sums = { points: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0, turnovers: 0 };
+  let perfSum = 0;
+  for (let i = 0; i < count; i++) {
+    const r = simulateGame(player, position, context);
+    if (r.win) wins++; else losses++;
+    STAT_BOXSCORE_KEYS.forEach(k => sums[k] += r.boxscore[k]);
+    perfSum += r.performanceRating;
+  }
+  const avg = {};
+  STAT_BOXSCORE_KEYS.forEach(k => avg[k] = Math.round((sums[k] / count) * 10) / 10);
+  return { wins, losses, avgBox: avg, avgPerformance: perfSum / count, games: count };
+}
+
+/* ---------------- Generic game simulator (used by HS/college/pro) ----------------
+   context: {
+     stageMult: {pointsScale, reboundsScale, assistsScale, stealScale, blockScale, turnoverBase},
+     pressure: 0..0.25,
+     isRival: bool, rivalryLevel: 0-3,
+     teammateBaseline: number (0-99),
+     opponentRating: number (0-99)
+   }
+*/
+const POSITION_FACTORS = {
+  PG: { rebound: 0.5, assist: 1.4, block: 0.25 },
+  SG: { rebound: 0.6, assist: 0.9, block: 0.3 },
+  SF: { rebound: 0.95, assist: 0.8, block: 0.8 },
+  PF: { rebound: 1.2, assist: 0.6, block: 1.3 },
+  C: { rebound: 1.3, assist: 0.55, block: 1.6 }
+};
+
+function simulateGame(player, position, context) {
+  const stats = player.stats;
+  const fatigue = fatigueMultiplier(player.energy);
+  const clutch = stats.clutch;
+  const iq = stats.iq;
+
+  const clutchResistance = clamp((clutch - 50) * 0.01, -0.5, 0.5);
+  const pressurePenalty = clamp(context.pressure * (1 - clutchResistance), 0, 0.4);
+  const pressureMult = 1 - pressurePenalty;
+
+  let rivalryMult = 1;
+  if (context.isRival) {
+    const level = context.rivalryLevel || 1;
+    const base = (clutch - 65) * 0.0022 * (1 + level * 0.35);
+    rivalryMult = 1 + clamp(base, -0.1, 0.1);
+  }
+
+  const varStd = clamp(0.17 * (1 - iq * 0.0055), 0.05, 0.2);
+  function noise() { return clamp(RNG.gauss(1, varStd), 0.65, 1.4); }
+
+  const power = statPower(stats, position);
+  const M = fatigue.mult * pressureMult * rivalryMult;
+  const performanceRating = clamp(power * M * noise(), 5, 130);
+
+  const sm = context.stageMult;
+  const posF = POSITION_FACTORS[position.key];
+
+  const points = clamp(
+    ((stats.shooting * 1.15 + stats.speed * 0.35 + stats.handles * 0.25) / 1.0) *
+      sm.pointsScale * position.scoreWeight * fatigue.mult * pressureMult * rivalryMult * noise(),
+    0, 68
+  );
+  const rebounds = clamp(stats.rebounding * sm.reboundsScale * posF.rebound * fatigue.mult * noise(), 0, 28);
+  const assists = clamp(stats.passing * sm.assistsScale * posF.assist * fatigue.mult * noise(), 0, 19);
+  const steals = clamp(stats.defense * sm.stealScale * fatigue.mult * noise(), 0, 9);
+  const blocks = clamp(((stats.defense * 0.5 + stats.rebounding * 0.5)) * sm.blockScale * posF.block * fatigue.mult * noise(), 0, 9);
+  let turnovers = sm.turnoverBase - (stats.handles * 0.022 + iq * 0.016) + RNG.gauss(0, 0.55);
+  if (fatigue.mult < 1) turnovers += (1 - fatigue.mult) * 5;
+  turnovers = clamp(turnovers, 0, 10);
+  const fgPct = clamp(0.32 + stats.shooting * 0.0032 + iq * 0.0007 - (1 - fatigue.mult) * 0.12, 0.28, 0.68);
+
+  const boxscore = {
+    points: Math.round(points), rebounds: Math.round(rebounds), assists: Math.round(assists),
+    steals: Math.round(steals), blocks: Math.round(blocks), turnovers: Math.round(turnovers),
+    fgPct: Math.round(fgPct * 1000) / 10
+  };
+
+  const teammateBaseline = context.teammateBaseline;
+  const teamRating = performanceRating * 0.42 + teammateBaseline * 0.58 + RNG.gauss(0, 4);
+  const opponentRoll = context.opponentRating + RNG.gauss(0, 6);
+  let margin = Math.round((teamRating - opponentRoll) * 0.55);
+  if (margin === 0) margin = RNG.chance(0.52) ? 1 : -1;
+  const win = margin > 0;
+  const yourScore = clamp(62 + Math.round(teamRating * 0.55) + RNG.int(-4, 4), 35, 145);
+  const oppScore = yourScore - margin;
+
+  const buzzerBeater = context.pressure >= 0.12 && Math.abs(margin) <= 2 && clutch >= 65 && RNG.chance(0.18 + (clutch - 65) * 0.004);
+
+  let injury = false;
+  if (fatigue.tag === "veryLow" && RNG.chance(ENERGY_CONFIG.tweakInjuryChance)) injury = true;
+
+  return {
+    boxscore, win, margin, yourScore, oppScore, performanceRating,
+    fatigueTag: fatigue.tag, buzzerBeater, injury
+  };
+}
+
+/* ---------------- Shared achievement / perk / rivalry helpers ---------------- */
+function unlockAchievement(state, id) {
+  if (state.player.achievementsUnlocked.includes(id)) return false;
+  state.player.achievementsUnlocked.push(id);
+  state.log.achievements.push(id);
+  return true;
+}
+
+function grantPerk(state, perkId) {
+  if (!perkId || !PERKS[perkId]) return;
+  if (state.player.perksUnlocked.includes(perkId)) return;
+  state.player.perksUnlocked.push(perkId);
+  const eff = PERKS[perkId].effect;
+  if (eff.statKey) bumpStat(state.player.stats, eff.statKey, eff.delta);
+  if (eff.energyMax) state.player.perkEnergyMaxBonus = (state.player.perkEnergyMaxBonus || 0) + eff.energyMax;
+  if (eff.energyRegen) state.player.perkEnergyRegenBonus = (state.player.perkEnergyRegenBonus || 0) + eff.energyRegen;
+  state.log.perks.push(perkId);
+}
+
+function updateRivalry(state, rivalKey, won) {
+  const riv = state.player.rivalries[rivalKey] || { level: 0, wins: 0, losses: 0 };
+  if (won) { riv.wins++; if (riv.level < 3 && riv.wins % 2 === 0) riv.level = Math.min(3, riv.level + 1); }
+  else { riv.losses++; }
+  if (riv.level === 0) riv.level = 1;
+  state.player.rivalries[rivalKey] = riv;
+  return riv;
+}
+
+function pickNarrativeEvent(state, pool, yearOrStage) {
+  const seen = state.player.seenNarrativeIds;
+  let candidates = pool.filter(ev => (!ev.years || ev.years.includes(yearOrStage)) && !seen.includes(ev.id));
+  if (candidates.length === 0) {
+    candidates = pool.filter(ev => (!ev.years || ev.years.includes(yearOrStage)));
+    if (candidates.length === 0) return null;
+  }
+  const ev = RNG.choice(candidates);
+  seen.push(ev.id);
+  return ev;
+}
+
+function applyNarrativeEffect(state, effect) {
+  if (!effect) return;
+  if (effect.statKey) bumpStat(state.player.stats, effect.statKey, effect.delta);
+  if (typeof effect.energy === "number") applyEnergyDelta(state.player, effect.energy);
+}
+
+function boxscoreFlags(bs) {
+  const doubleFigureCats = [bs.points >= 10, bs.rebounds >= 10, bs.assists >= 10, bs.steals >= 10, bs.blocks >= 10].filter(Boolean).length;
+  return {
+    doubleDouble: doubleFigureCats >= 2,
+    tripleDouble: doubleFigureCats >= 3,
+    twenty: bs.points >= 20,
+    thirty: bs.points >= 30,
+    forty: bs.points >= 40,
+    fifty: bs.points >= 50,
+    fiveSteals: bs.steals >= 5,
+    fiveBlocks: bs.blocks >= 5
+  };
+}
+
+
+/* ---- hs-engine.js ---- */
+/* ============================================================
+   Hoop Dreams — High School stage (weekly loop, 4 years)
+   ============================================================ */
+"use strict";
+
+const HS_STAGE_ORDER = ["district", "regional", "semis", "final", "champion"];
+const HS_STAGE_LABELS = { district: "District Championship", regional: "Regional Final", semis: "State Semifinal", final: "State Championship", champion: "State Champion" };
+
+function hsStageMult() {
+  return { pointsScale: 0.34, reboundsScale: 0.145, assistsScale: 0.115, stealScale: 0.048, blockScale: 0.042, turnoverBase: 3.4 };
+}
+
+function newCareerState(name, teamName, positionKey, stats) {
+  const player = {
+    name: name || "Alex Carter",
+    teamName: teamName || DEFAULT_TEAM_NAME,
+    position: positionKey,
+    stats: stats,
+    energy: ENERGY_MAX,
+    perkEnergyMaxBonus: 0,
+    perkEnergyRegenBonus: 0,
+    achievementsUnlocked: [],
+    perksUnlocked: [],
+    seenNarrativeIds: [],
+    rivalries: {},
+    injuryCount: 0,
+    recruitingStock: 0,
+    draftStock: 0,
+    hasStartedHS: false,
+    careerBest: { points: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0 },
+    careerTotals: {
+      hs: { games: 0, wins: 0, losses: 0, points: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0, turnovers: 0 },
+      college: { games: 0, wins: 0, losses: 0, points: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0, turnovers: 0 },
+      pro: { games: 0, wins: 0, losses: 0, points: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0, turnovers: 0 }
+    },
+    awards: [],
+    hsYear: 1,
+    hsWeek: 1,
+    stage: "hs"
+  };
+  const state = {
+    player,
+    season: null,
+    history: { games: [], narrative: [], hsSeasons: [], collegeSeasons: [], proSeasons: [] },
+    log: { training: [], game: null, narrative: null, achievements: [], perks: [], banquet: null }
+  };
+  startHSSeason(state);
+  return state;
+}
+
+function resetLog(state) { state.log = { training: [], game: null, narrative: null, achievements: [], perks: [], banquet: null }; }
+
+function buildHSSchedule(year) {
+  const boost = (year - 1) * 5;
+  const pool = [...HS_OPPONENTS].sort(() => Math.random() - 0.5).slice(0, 8);
+  const weeks = [];
+  weeks.push({ week: 1, type: "tryout" });
+  for (let i = 0; i < 8; i++) {
+    weeks.push({
+      week: i + 2, type: "game", stage: "regular", isRival: false,
+      opponentName: pool[i], opponentRating: clamp(HS_BASE_OPPONENT_RATINGS[i] + boost + RNG.int(-3, 3), 20, 95),
+      pressure: 0.0
+    });
+  }
+  weeks.push({
+    week: 10, type: "game", stage: "rivalry", isRival: true,
+    opponentName: HS_RIVAL_SCHOOL, opponentRating: clamp(HS_RIVAL_BASE_RATING + boost + RNG.int(-2, 2), 20, 97),
+    pressure: 0.07
+  });
+  const playoffStages = [
+    ["district", HS_PLAYOFF_BASE_RATINGS.district, 0.09],
+    ["regional", HS_PLAYOFF_BASE_RATINGS.regional, 0.13],
+    ["semis", HS_PLAYOFF_BASE_RATINGS.semis, 0.17],
+    ["final", HS_PLAYOFF_BASE_RATINGS.final, 0.22]
+  ];
+  playoffStages.forEach((p, idx) => {
+    weeks.push({
+      week: 11 + idx, type: "game", stage: p[0], isRival: false,
+      opponentName: RNG.choice(HS_OPPONENTS), opponentRating: clamp(p[1] + boost * 0.6 + RNG.int(-3, 3), 20, 98),
+      pressure: p[2]
+    });
+  });
+  weeks.push({ week: 15, type: "banquet" });
+  return weeks;
+}
+
+function selectHSGoals(state) {
+  const year = state.player.hsYear;
+  const position = POSITIONS[state.player.position];
+  const rotation = ["goal_win_count", "goal_rival", "goal_pb"];
+  const thirdId = rotation[(year - 1) % rotation.length];
+  const chosenIds = ["goal_primary_stat", "goal_playoff", thirdId];
+
+  return chosenIds.map(id => {
+    const tpl = HS_GOAL_TEMPLATES.find(t => t.id === id);
+    if (id === "goal_primary_stat") {
+      const statKey = position.primary[0];
+      const target = tpl.valueByYear[year - 1];
+      return { id, name: tpl.name, desc: `Reach ${target} ${STAT_LABELS[statKey]} by season's end.`, statKey, target, rewardPerk: "perk_" + statKey };
+    }
+    if (id === "goal_win_count") {
+      const target = tpl.valueByYear[year - 1];
+      return { id, name: tpl.name, desc: `Win at least ${target} games this season.`, target, rewardPerk: "perk_iq" };
+    }
+    if (id === "goal_rival") {
+      return { id, name: tpl.name, desc: `Beat ${HS_RIVAL_SCHOOL} on Rivalry Night.`, rewardPerk: "perk_clutch" };
+    }
+    if (id === "goal_playoff") {
+      const stage = tpl.stageByYear[year - 1];
+      return { id, name: tpl.name, desc: `Reach the ${HS_STAGE_LABELS[stage]}.`, stage, rewardPerk: "perk_" + position.secondary[0] };
+    }
+    if (id === "goal_pb") {
+      return { id, name: tpl.name, desc: `Post a new career-high scoring game this season.`, rewardPerk: "perk_shooting" };
+    }
+    return { id, name: tpl.name, desc: "", rewardPerk: "perk_iq" };
+  });
+}
+
+function startHSSeason(state) {
+  const year = state.player.hsYear;
+  state.season = {
+    kind: "hs", year, week: 1,
+    schedule: buildHSSchedule(year),
+    wins: 0, losses: 0, eliminated: false,
+    reachedStages: new Set(),
+    rivalryBeaten: false,
+    bestPointsThisSeason: 0,
+    newCareerHighFlag: false,
+    hadVeryLowGame: false,
+    pendingNarrative: null,
+    pendingNarrativeWeek: null,
+    teammateBaseline: clamp(44 + (year - 1) * 4 + RNG.int(-3, 3), 30, 80),
+    goalsActive: selectHSGoals(state),
+    goalsEvaluated: null
+  };
+}
+
+function currentHSWeek(state) {
+  return state.season.schedule.find(w => w.week === state.player.hsWeek);
+}
+
+/* Idempotent per-week narrative roll. Safe to call from the UI when rendering
+   the hub, and again inside advanceHSWeek — it will not re-roll for the same week. */
+function getWeekNarrative(state) {
+  const week = state.player.hsWeek;
+  if (state.season.pendingNarrativeWeek === week) return state.season.pendingNarrative;
+  let ev = null;
+  const wk = currentHSWeek(state);
+  if (wk && wk.type !== "banquet" && RNG.chance(0.75)) {
+    ev = pickNarrativeEvent(state, HS_NARRATIVE_EVENTS, state.player.hsYear);
+  }
+  state.season.pendingNarrative = ev;
+  state.season.pendingNarrativeWeek = week;
+  return ev;
+}
+
+function checkHSAchievements(state, week, result) {
+  if (!state.player.hasStartedHS) { state.player.hasStartedHS = true; unlockAchievement(state, "hs_first_start"); }
+  const flags = boxscoreFlags(result.boxscore);
+  if (flags.tripleDouble) unlockAchievement(state, "hs_triple_double");
+  else if (flags.doubleDouble) unlockAchievement(state, "hs_double_double");
+  if (flags.thirty) unlockAchievement(state, "hs_thirty");
+  else if (flags.twenty) unlockAchievement(state, "hs_twenty");
+  if (flags.fiveSteals) unlockAchievement(state, "hs_five_steals");
+  if (flags.fiveBlocks) unlockAchievement(state, "hs_five_blocks");
+  if (result.buzzerBeater) unlockAchievement(state, "hs_buzzer_beater");
+  if (week.isRival && result.win) unlockAchievement(state, "hs_rival_slayer");
+  if (week.stage === "final" && result.win) unlockAchievement(state, "hs_state_champion");
+}
+
+function recordGameTotals(state, bs, win) {
+  const t = state.player.careerTotals.hs;
+  t.games++; if (win) t.wins++; else t.losses++;
+  t.points += bs.points; t.rebounds += bs.rebounds; t.assists += bs.assists;
+  t.steals += bs.steals; t.blocks += bs.blocks; t.turnovers += bs.turnovers;
+  const cb = state.player.careerBest;
+  cb.points = Math.max(cb.points, bs.points);
+  cb.rebounds = Math.max(cb.rebounds, bs.rebounds);
+  cb.assists = Math.max(cb.assists, bs.assists);
+  cb.steals = Math.max(cb.steals, bs.steals);
+  cb.blocks = Math.max(cb.blocks, bs.blocks);
+}
+
+function playHSGame(state, week) {
+  const position = POSITIONS[state.player.position];
+  const rivalKey = "hs_rival";
+  const rivalry = state.player.rivalries[rivalKey];
+  const context = {
+    stageMult: hsStageMult(),
+    pressure: week.pressure,
+    isRival: week.isRival,
+    rivalryLevel: week.isRival && rivalry ? rivalry.level : 0,
+    teammateBaseline: state.season.teammateBaseline,
+    opponentRating: week.opponentRating
+  };
+  const result = simulateGame(state.player, position, context);
+  const gameEnergyCost = Math.round(14 + week.pressure * 70);
+  applyEnergyDelta(state.player, -gameEnergyCost);
+
+  if (week.isRival) updateRivalry(state, rivalKey, result.win);
+  if (result.win) state.season.wins++; else state.season.losses++;
+  const priorCareerBest = state.player.careerBest.points;
+  recordGameTotals(state, result.boxscore, result.win);
+
+  if (result.boxscore.points > state.season.bestPointsThisSeason) state.season.bestPointsThisSeason = result.boxscore.points;
+  if (result.boxscore.points > priorCareerBest) state.season.newCareerHighFlag = true;
+  if (result.fatigueTag === "veryLow") state.season.hadVeryLowGame = true;
+
+  if (week.stage !== "regular" && week.stage !== "rivalry") {
+    state.season.reachedStages.add(week.stage);
+    if (result.win) {
+      const idx = HS_STAGE_ORDER.indexOf(week.stage);
+      if (idx === HS_STAGE_ORDER.length - 2) state.season.reachedStages.add("champion");
+      else state.season.reachedStages.add(HS_STAGE_ORDER[idx + 1]);
+    } else {
+      state.season.eliminated = true;
+    }
+  }
+  if (week.isRival && result.win) state.season.rivalryBeaten = true;
+
+  checkHSAchievements(state, week, result);
+
+  if (result.injury) { state.player.injuryCount++; applyEnergyDelta(state.player, -8); }
+
+  const record = {
+    stage: "hs", year: state.season.year, week: week.week, opponent: week.opponentName,
+    win: result.win, yourScore: result.yourScore, oppScore: result.oppScore, boxscore: result.boxscore
+  };
+  state.history.games.push(record);
+  return result;
+}
+
+function evaluateHSGoals(state) {
+  const position = POSITIONS[state.player.position];
+  return state.season.goalsActive.map(g => {
+    let done = false;
+    if (g.id === "goal_primary_stat") done = state.player.stats[g.statKey] >= g.target;
+    else if (g.id === "goal_win_count") done = state.season.wins >= g.target;
+    else if (g.id === "goal_rival") done = state.season.rivalryBeaten;
+    else if (g.id === "goal_playoff") done = state.season.reachedStages.has(g.stage) || state.season.reachedStages.has("champion");
+    else if (g.id === "goal_pb") done = !!state.season.newCareerHighFlag;
+    return { ...g, done };
+  });
+}
+
+function applyHSOffseasonGrowth(state) {
+  const position = POSITIONS[state.player.position];
+  bumpStat(state.player.stats, "iq", 1);
+  position.primary.forEach(k => bumpStat(state.player.stats, k, RNG.int(1, 3)));
+  position.secondary.forEach(k => bumpStat(state.player.stats, k, RNG.int(0, 2)));
+}
+
+function computeRecruitingStock(state) {
+  const position = POSITIONS[state.player.position];
+  const power = statPower(state.player.stats, position); // 0-99
+  const t = state.player.careerTotals.hs;
+  const winPct = t.games > 0 ? t.wins / t.games : 0.5;
+  const hsAchCount = state.player.achievementsUnlocked.filter(id => HS_ACHIEVEMENTS.some(a => a.id === id)).length;
+  const achScore = clamp(hsAchCount / HS_ACHIEVEMENTS.length, 0, 1) * 100;
+  const bestStageIdx = state.history.hsSeasons.reduce((best, s) => {
+    let idx = -1;
+    HS_STAGE_ORDER.forEach((stg, i) => { if (s.reachedStages.includes(stg)) idx = i; });
+    return Math.max(best, idx);
+  }, -1);
+  const stageScore = clamp((bestStageIdx + 1) / HS_STAGE_ORDER.length, 0, 1) * 100;
+  const stock = power * 0.4 + winPct * 100 * 0.25 + achScore * 0.15 + stageScore * 0.2;
+  state.player.recruitingStock = Math.round(clamp(stock, 0, 100));
+  return state.player.recruitingStock;
+}
+
+/* Advance the current HS week. chosenSessions = array of up to 2 training id strings.
+   narrativeChoiceIdx = index into the pending narrative event's choices, if any. */
+function advanceHSWeek(state, chosenSessions, narrativeChoiceIdx) {
+  resetLog(state);
+  const week = currentHSWeek(state);
+  const player = state.player;
+
+  const ev = getWeekNarrative(state);
+  if (ev) {
+    let effect = ev.effect, chosenLabel = null;
+    if (ev.choices) {
+      const idx = (typeof narrativeChoiceIdx === "number" && ev.choices[narrativeChoiceIdx]) ? narrativeChoiceIdx : 0;
+      effect = ev.choices[idx].effect;
+      chosenLabel = ev.choices[idx].label;
+    }
+    applyNarrativeEffect(state, effect);
+    state.log.narrative = { text: ev.text, chosenLabel };
+    state.history.narrative.push({ year: player.hsYear, week: player.hsWeek, id: ev.id, chosenLabel });
+  }
+  state.season.pendingNarrative = null;
+
+  (chosenSessions || []).slice(0, 2).forEach(id => {
+    const line = applyTrainingSession(player, id, 1);
+    if (line) state.log.training.push(line);
+  });
+
+  if (week.type === "tryout") {
+    state.log.banquet = null;
+  } else if (week.type === "game") {
+    const isByeElimination = state.season.eliminated && week.stage !== "regular" && week.stage !== "rivalry";
+    if (isByeElimination) {
+      state.log.game = { isBye: true, reason: "The season ended in the playoffs. The team uses the week for practice and film." };
+    } else {
+      const result = playHSGame(state, week);
+      state.log.game = { isBye: false, week, result };
+    }
+  } else if (week.type === "banquet") {
+    if (!state.season.hadVeryLowGame && state.season.wins + state.season.losses > 0) unlockAchievement(state, "hs_iron_freshman");
+    const goalsEvaluated = evaluateHSGoals(state);
+    goalsEvaluated.forEach(g => { if (g.done) grantPerk(state, g.rewardPerk); });
+    state.season.goalsEvaluated = goalsEvaluated;
+    state.history.hsSeasons.push({
+      year: state.season.year, wins: state.season.wins, losses: state.season.losses,
+      reachedStages: Array.from(state.season.reachedStages), goalsEvaluated
+    });
+    state.log.banquet = { goalsEvaluated, wins: state.season.wins, losses: state.season.losses, year: state.season.year };
+
+    if (state.player.hsYear < 4) {
+      applyHSOffseasonGrowth(state);
+      player.hsYear++;
+      player.hsWeek = 1;
+      startHSSeason(state);
+      const maxE = ENERGY_MAX + (player.perkEnergyMaxBonus || 0);
+      player.energy = maxE;
+      return state.log;
+    } else {
+      applyHSOffseasonGrowth(state);
+      computeRecruitingStock(state);
+      player.stage = "recruiting";
+      return state.log;
+    }
+  }
+
+  weeklyRegen(player, ENERGY_CONFIG.hsWeeklyRegen);
+
+  player.hsWeek++;
+  return state.log;
+}
+
+
+/* ---- college-engine.js ---- */
+/* ============================================================
+   Hoop Dreams — College stage (condensed season-by-season loop)
+   ============================================================ */
+"use strict";
+
+const COLLEGE_STEP_ORDER = ["preseason", "showcase", "midseason", "conference", "rivalry", "conf_tourney", "national_tourney", "awards"];
+const COLLEGE_TOURNEY_ROUNDS = [
+  { id: "round64", label: "Round of 64", pressureAdd: 14 },
+  { id: "round32", label: "Round of 32", pressureAdd: 17 },
+  { id: "round16", label: "Round of 16", pressureAdd: 20 },
+  { id: "round8", label: "Round of 8", pressureAdd: 23 },
+  { id: "natSemi", label: "National Semifinal", pressureAdd: 27 },
+  { id: "natFinal", label: "National Championship", pressureAdd: 31 }
+];
+const CONF_TOURNEY_ROUNDS = [
+  { id: "confSemi", label: "Conference Semifinal", pressureAdd: 13 },
+  { id: "confFinal", label: "Conference Final", pressureAdd: 16 }
+];
+
+function collegeStageMult() {
+  return { pointsScale: 0.30, reboundsScale: 0.135, assistsScale: 0.108, stealScale: 0.045, blockScale: 0.04, turnoverBase: 3.0 };
+}
+
+const COLLEGE_TIER_ORDER = ["walkon", "small", "midmajor", "major", "powerhouse"];
+function tierForStock(stock) {
+  if (stock >= 80) return "powerhouse";
+  if (stock >= 65) return "major";
+  if (stock >= 50) return "midmajor";
+  if (stock >= 35) return "small";
+  return "walkon";
+}
+
+function pickProgram(tier, exclude) {
+  const options = COLLEGE_PROGRAMS.filter(p => p.tier === tier && p.name !== exclude);
+  if (options.length === 0) return { name: COLLEGE_TIERS[tier].label + " University", tier };
+  return RNG.choice(options);
+}
+
+function generateCollegeOffers(state) {
+  const stock = state.player.recruitingStock;
+  const primaryTier = tierForStock(stock);
+  const primaryIdx = COLLEGE_TIER_ORDER.indexOf(primaryTier);
+  const tiers = new Set([primaryTier]);
+  if (primaryIdx > 0) tiers.add(COLLEGE_TIER_ORDER[primaryIdx - 1]);
+  if (primaryIdx < COLLEGE_TIER_ORDER.length - 1 && RNG.chance(0.35)) tiers.add(COLLEGE_TIER_ORDER[primaryIdx + 1]);
+
+  return Array.from(tiers).map(tier => {
+    const program = pickProgram(tier, null);
+    const def = COLLEGE_TIERS[tier];
+    return { tier, label: def.label, school: program.name, rating: clamp(def.rating + RNG.int(-def.spread, def.spread), 30, 96) };
+  }).sort((a, b) => COLLEGE_TIER_ORDER.indexOf(b.tier) - COLLEGE_TIER_ORDER.indexOf(a.tier));
+}
+
+function chooseCollegeOffer(state, offer) {
+  state.player.collegeTeam = { name: offer.school, tier: offer.tier, rating: offer.rating };
+  state.player.collegeYear = 1;
+  state.player.stage = "college";
+  state.player.hasPlayedCollegeGame = false;
+  state.player.energy = ENERGY_MAX + (state.player.perkEnergyMaxBonus || 0);
+  startCollegeSeason(state);
+}
+
+function startCollegeSeason(state) {
+  const team = state.player.collegeTeam;
+  const boost = (state.player.collegeYear - 1) * 4;
+  const teamRating = clamp(team.rating + boost, 30, 99);
+  const rivalPool = COLLEGE_PROGRAMS.filter(p => p.tier === team.tier && p.name !== team.name);
+  const rivalSchool = rivalPool.length ? RNG.choice(rivalPool).name : "Old State Rival";
+
+  const power = statPower(state.player.stats, POSITIONS[state.player.position]);
+  const starBoost = clamp((power - 60) * 0.15, -4, 8);
+  state.season = {
+    kind: "college", year: state.player.collegeYear, stepIndex: 0,
+    steps: COLLEGE_STEP_ORDER.slice(),
+    teamRating, rivalSchool,
+    teammateBaseline: clamp(teamRating - 6 + starBoost + RNG.int(-3, 3), 25, 94),
+    wins: 0, losses: 0,
+    confTourneyStage: 0, confTourneyEliminated: false, wonConfTourney: false,
+    nationalBid: false, nationalRound: -1, nationalEliminated: true, wonNational: false,
+    performanceSum: 0, performanceCount: 0,
+    pendingNarrative: null, pendingNarrativeStep: null,
+    gamesLog: []
+  };
+}
+
+function currentCollegeStep(state) { return state.season.steps[state.season.stepIndex]; }
+
+function getCollegeNarrative(state) {
+  const step = state.season.stepIndex;
+  if (state.season.pendingNarrativeStep === step) return state.season.pendingNarrative;
+  let ev = null;
+  if (RNG.chance(0.6)) ev = RNG.choice(COLLEGE_STORY_BEATS);
+  state.season.pendingNarrative = ev;
+  state.season.pendingNarrativeStep = step;
+  return ev;
+}
+
+function collegeContext(state, opponentRating, pressure, isRival) {
+  return {
+    stageMult: collegeStageMult(),
+    pressure, isRival, rivalryLevel: isRival ? (state.player.rivalries["college_rival"] || { level: 1 }).level : 0,
+    teammateBaseline: state.season.teammateBaseline,
+    opponentRating
+  };
+}
+
+function recordCollegeGameTotals(state, bs, win) {
+  const t = state.player.careerTotals.college;
+  t.games++; if (win) t.wins++; else t.losses++;
+  t.points += bs.points; t.rebounds += bs.rebounds; t.assists += bs.assists;
+  t.steals += bs.steals; t.blocks += bs.blocks; t.turnovers += bs.turnovers;
+  const cb = state.player.careerBest;
+  cb.points = Math.max(cb.points, bs.points);
+  cb.rebounds = Math.max(cb.rebounds, bs.rebounds);
+  cb.assists = Math.max(cb.assists, bs.assists);
+  cb.steals = Math.max(cb.steals, bs.steals);
+  cb.blocks = Math.max(cb.blocks, bs.blocks);
+}
+
+function checkCollegeGameAchievements(state, result) {
+  const flags = boxscoreFlags(result.boxscore);
+  state.player.hasPlayedCollegeGame = true;
+  if (flags.doubleDouble && state.player.careerTotals.college.games <= 1) unlockAchievement(state, "col_debut_dd");
+  if (flags.forty) unlockAchievement(state, "col_forty");
+  if (result.buzzerBeater) unlockAchievement(state, "col_tourney_hero");
+  return flags;
+}
+
+function playCollegeMarqueeGame(state, opponentName, opponentRating, pressure, isRival, label) {
+  const position = POSITIONS[state.player.position];
+  const context = collegeContext(state, opponentRating, pressure, isRival);
+  const result = simulateGame(state.player, position, context);
+  const cost = Math.round(18 + pressure * 60);
+  applyEnergyDelta(state.player, -cost);
+  if (isRival) updateRivalry(state, "college_rival", result.win);
+  if (result.win) state.season.wins++; else state.season.losses++;
+  recordCollegeGameTotals(state, result.boxscore, result.win);
+  state.season.performanceSum += result.performanceRating; state.season.performanceCount++;
+  checkCollegeGameAchievements(state, result);
+  if (result.injury) { state.player.injuryCount++; applyEnergyDelta(state.player, -8); }
+  const record = { stage: "college", year: state.season.year, label, opponent: opponentName, win: result.win, yourScore: result.yourScore, oppScore: result.oppScore, boxscore: result.boxscore };
+  state.history.games.push(record);
+  state.season.gamesLog.push(record);
+  return result;
+}
+
+function advanceCollegeStep(state, chosenSessions, narrativeChoiceIdx) {
+  resetLog(state);
+  const player = state.player;
+  const season = state.season;
+  const step = currentCollegeStep(state);
+
+  const ev = getCollegeNarrative(state);
+  if (ev) { state.log.narrative = { text: ev.text, chosenLabel: null }; season.pendingNarrative = null; }
+
+  if (step === "preseason" || step === "midseason") {
+    (chosenSessions || []).slice(0, 2).forEach(id => {
+      const line = applyTrainingSession(player, id, 1.4, 2.2);
+      if (line) state.log.training.push(line);
+    });
+    weeklyRegen(player, ENERGY_CONFIG.collegeWeeklyRegen);
+    season.stepIndex++;
+    return state.log;
+  }
+
+  const collegeStepRegen = () => weeklyRegen(player, 12); // small between-game trickle; tourney runs stay taxing
+
+  if (step === "showcase") {
+    const oppRating = clamp(season.teamRating + 8 + RNG.int(-4, 4), 25, 99);
+    const result = playCollegeMarqueeGame(state, "a nationally ranked non-conference opponent", oppRating, 0.08, false, "Non-Conference Showcase");
+    state.log.game = { label: "Non-Conference Showcase", result };
+    collegeStepRegen();
+    season.stepIndex++;
+    return state.log;
+  }
+
+  if (step === "conference") {
+    const context = collegeContext(state, season.teamRating, 0.03, false);
+    const block = simulateGameBlock(player, POSITIONS[player.position], context, 16);
+    season.wins += block.wins; season.losses += block.losses;
+    const t = player.careerTotals.college;
+    t.games += block.games; t.wins += block.wins; t.losses += block.losses;
+    t.points += block.avgBox.points * block.games; t.rebounds += block.avgBox.rebounds * block.games;
+    t.assists += block.avgBox.assists * block.games; t.steals += block.avgBox.steals * block.games;
+    t.blocks += block.avgBox.blocks * block.games; t.turnovers += block.avgBox.turnovers * block.games;
+    season.performanceSum += block.avgPerformance * block.games; season.performanceCount += block.games;
+    applyEnergyDelta(player, -32);
+    state.log.game = { label: "Conference Slate", block };
+    collegeStepRegen();
+    season.stepIndex++;
+    return state.log;
+  }
+
+  if (step === "rivalry") {
+    const oppRating = clamp(season.teamRating + 5 + RNG.int(-3, 3), 25, 99);
+    const result = playCollegeMarqueeGame(state, season.rivalSchool, oppRating, 0.11, true, "Rivalry Game");
+    state.log.game = { label: "Rivalry Game", result };
+    collegeStepRegen();
+    season.stepIndex++;
+    return state.log;
+  }
+
+  if (step === "conf_tourney") {
+    /* Multi-round bracket: only advance the step once the run is fully resolved
+       (won it all or eliminated) — otherwise stay here for the next round. */
+    const round = CONF_TOURNEY_ROUNDS[season.confTourneyStage];
+    const oppRating = clamp(season.teamRating + round.pressureAdd + RNG.int(-3, 3), 25, 99);
+    const result = playCollegeMarqueeGame(state, "the conference tournament field", oppRating, round.pressureAdd / 100, false, round.label);
+    state.log.game = { label: round.label, result };
+    season.confTourneyStage++;
+    collegeStepRegen();
+    if (!result.win) {
+      season.confTourneyEliminated = true;
+      season.stepIndex++;
+    } else if (season.confTourneyStage >= CONF_TOURNEY_ROUNDS.length) {
+      season.wonConfTourney = true; season.nationalBid = true;
+      season.stepIndex++;
+    }
+    return state.log;
+  }
+
+  if (step === "national_tourney") {
+    if (season.nationalRound === -1) {
+      if (!season.nationalBid) {
+        const resumeScore = season.performanceCount > 0 ? season.performanceSum / season.performanceCount : 0;
+        season.nationalBid = resumeScore >= season.teamRating * 1.05 && season.wins >= season.losses;
+      }
+      if (!season.nationalBid) {
+        state.log.game = { label: "National Tournament", skipped: true, reason: "No bid this season — the run ends in the conference tournament." };
+        season.stepIndex++;
+        return state.log;
+      }
+      season.nationalRound = 0;
+    }
+    const round = COLLEGE_TOURNEY_ROUNDS[season.nationalRound];
+    const oppRating = clamp(season.teamRating + round.pressureAdd + RNG.int(-3, 3), 25, 99);
+    const result = playCollegeMarqueeGame(state, "a national tournament opponent", oppRating, round.pressureAdd / 100, false, round.label);
+    state.log.game = { label: round.label, result };
+    season.nationalRound++;
+    collegeStepRegen();
+    if (!result.win) {
+      season.nationalEliminated = true;
+      season.stepIndex++;
+    } else if (season.nationalRound >= COLLEGE_TOURNEY_ROUNDS.length) {
+      season.wonNational = true; unlockAchievement(state, "col_natl_champion");
+      season.stepIndex++;
+    }
+    return state.log;
+  }
+
+  if (step === "awards") {
+    const avgPerf = season.performanceCount > 0 ? season.performanceSum / season.performanceCount : 0;
+    let poy = false;
+    if (avgPerf >= season.teamRating + 16) { poy = true; unlockAchievement(state, "col_conf_poy"); player.awards.push({ stage: "college", year: season.year, award: "Conference Player of the Year" }); }
+    computeDraftStock(state, avgPerf);
+    state.history.collegeSeasons.push({
+      year: season.year, team: player.collegeTeam.name, tier: player.collegeTeam.tier,
+      wins: season.wins, losses: season.losses, wonConfTourney: season.wonConfTourney, wonNational: season.wonNational, poy
+    });
+    const eligibleToDeclare = true;
+    const mustDeclare = player.collegeYear >= 4;
+    state.log.banquet = {
+      wins: season.wins, losses: season.losses, wonConfTourney: season.wonConfTourney, wonNational: season.wonNational,
+      poy, draftStock: player.draftStock, mustDeclare, eligibleToDeclare, year: season.year
+    };
+    return state.log;
+  }
+
+  return state.log;
+}
+
+function computeDraftStock(state, avgPerf) {
+  const player = state.player;
+  const position = POSITIONS[player.position];
+  const power = statPower(player.stats, position);
+  const t = player.careerTotals.college;
+  const winPct = t.games > 0 ? t.wins / t.games : 0.5;
+  const collegeAchCount = player.achievementsUnlocked.filter(id => COLLEGE_ACHIEVEMENTS.some(a => a.id === id)).length;
+  const achScore = clamp(collegeAchCount / COLLEGE_ACHIEVEMENTS.length, 0, 1) * 100;
+  const bestDepth = state.history.collegeSeasons.reduce((best, s) => Math.max(best, s.wonNational ? 6 : (s.wonConfTourney ? 3 : 1)), 0);
+  const depthScore = clamp(bestDepth / 6, 0, 1) * 100;
+  const tierBias = { powerhouse: 6, major: 2, midmajor: 0, small: -3, walkon: -6 }[player.collegeTeam.tier] || 0;
+  const stock = power * 0.45 + winPct * 100 * 0.2 + achScore * 0.15 + depthScore * 0.2 + tierBias;
+  player.draftStock = Math.round(clamp(stock, 0, 100));
+  return player.draftStock;
+}
+
+function declareForDraft(state) {
+  state.player.stage = "draft";
+}
+
+function returnToCollege(state) {
+  applyCollegeOffseasonGrowth(state);
+  state.player.collegeYear++;
+  startCollegeSeason(state);
+  state.player.energy = ENERGY_MAX + (state.player.perkEnergyMaxBonus || 0);
+}
+
+function applyCollegeOffseasonGrowth(state) {
+  const position = POSITIONS[state.player.position];
+  bumpStat(state.player.stats, "iq", 1);
+  position.primary.forEach(k => bumpStat(state.player.stats, k, RNG.int(1, 3)));
+  position.secondary.forEach(k => bumpStat(state.player.stats, k, RNG.int(1, 2)));
+}
+
+
+/* ---- pro-engine.js ---- */
+/* ============================================================
+   Hoop Dreams — Pro stage (draft, yearly loop, aging, retirement)
+   ============================================================ */
+"use strict";
+
+const PRO_STEP_ORDER = ["offseason", "marquee_game", "regular_season", "allstar_check", "playoffs", "awards"];
+const PRO_PLAYOFF_ROUNDS = [
+  { id: "round1", label: "Playoff Round 1", pressureAdd: 16 },
+  { id: "round2", label: "Conference Semifinal", pressureAdd: 21 },
+  { id: "confFinal", label: "Conference Final", pressureAdd: 26 },
+  { id: "leagueFinal", label: "League Championship", pressureAdd: 33 }
+];
+
+function proStageMult() {
+  return { pointsScale: 0.40, reboundsScale: 0.15, assistsScale: 0.12, stealScale: 0.05, blockScale: 0.045, turnoverBase: 2.7 };
+}
+
+/* ---------------- Draft night ---------------- */
+function runDraftNight(state) {
+  const player = state.player;
+  const stock = player.draftStock || 0;
+  const draftRoll = clamp(stock + RNG.gauss(0, 8), 0, 100);
+  if (draftRoll < 32) {
+    return { drafted: false };
+  }
+  const pickNumber = clamp(Math.round(17 - draftRoll * 0.16), 1, 16);
+  const teamsSorted = [...PRO_TEAMS].sort((a, b) => a.tierRating - b.tierRating);
+  const team = teamsSorted[pickNumber - 1];
+  return { drafted: true, pickNumber, team };
+}
+
+function beginProCareer(state, team) {
+  const player = state.player;
+  player.stage = "pro";
+  player.proTeam = { name: team.name, tierRating: team.tierRating };
+  player.proYear = 1;
+  player.age = 18 + (player.collegeYear || 0) + (player.overseasYears || 0);
+  player.hasPlayedProGame = false;
+  player.lowRatingStreak = 0;
+  player.energy = ENERGY_MAX + (player.perkEnergyMaxBonus || 0);
+  startProSeason(state);
+}
+
+function signUndraftedFreeAgent(state) {
+  const bottomTeams = [...PRO_TEAMS].sort((a, b) => a.tierRating - b.tierRating).slice(0, 5);
+  beginProCareer(state, RNG.choice(bottomTeams));
+  state.player.wasUndrafted = true;
+}
+
+function goOverseas(state) {
+  const player = state.player;
+  player.overseasYears = (player.overseasYears || 0) + 1;
+  const position = POSITIONS[player.position];
+  position.primary.forEach(k => bumpStat(player.stats, k, RNG.int(1, 2)));
+  player.draftStock = clamp((player.draftStock || 0) + RNG.int(4, 10), 0, 100);
+  player.overseasCareerEndedEarly = player.overseasYears >= 3;
+}
+
+function retireBeforeProCareer(state) {
+  state.player.stage = "retired";
+  state.player.retirementReason = "walked away before ever landing a professional roster spot";
+}
+
+/* ---------------- Season lifecycle ---------------- */
+function startProSeason(state) {
+  const player = state.player;
+  const teamRating = clamp(player.proTeam.tierRating + RNG.int(-4, 4), 30, 99);
+  const power = statPower(player.stats, POSITIONS[player.position]);
+  /* A star player gradually pulls his supporting cast up — front offices build around
+     proven talent — so a long elite career isn't permanently capped by an early bad roster. */
+  const starBoost = clamp((power - 65) * 0.22, -6, 14);
+  state.season = {
+    kind: "pro", year: player.proYear, stepIndex: 0,
+    steps: PRO_STEP_ORDER.slice(),
+    teamRating,
+    teammateBaseline: clamp(teamRating - 4 + starBoost + RNG.int(-3, 3), 25, 97),
+    wins: 0, losses: 0,
+    regularAvgPerf: 0, regularAvgPoints: 0,
+    allStar: false,
+    madePlayoffs: false, playoffRound: -1, playoffEliminated: false, wonChampionship: false, reachedFinals: false,
+    pendingNarrative: null, pendingNarrativeStep: null,
+    gamesLog: []
+  };
+}
+
+function currentProStep(state) { return state.season.steps[state.season.stepIndex]; }
+
+function getProNarrative(state) {
+  const step = state.season.stepIndex;
+  if (state.season.pendingNarrativeStep === step) return state.season.pendingNarrative;
+  let ev = null;
+  if (RNG.chance(0.55)) ev = RNG.choice(PRO_STORY_BEATS);
+  state.season.pendingNarrative = ev;
+  state.season.pendingNarrativeStep = step;
+  return ev;
+}
+
+function proContext(state, opponentRating, pressure) {
+  return {
+    stageMult: proStageMult(), pressure, isRival: false, rivalryLevel: 0,
+    teammateBaseline: state.season.teammateBaseline, opponentRating
+  };
+}
+
+function recordProGameTotals(state, bs, win) {
+  const t = state.player.careerTotals.pro;
+  t.games++; if (win) t.wins++; else t.losses++;
+  t.points += bs.points; t.rebounds += bs.rebounds; t.assists += bs.assists;
+  t.steals += bs.steals; t.blocks += bs.blocks; t.turnovers += bs.turnovers;
+  const cb = state.player.careerBest;
+  cb.points = Math.max(cb.points, bs.points);
+  cb.rebounds = Math.max(cb.rebounds, bs.rebounds);
+  cb.assists = Math.max(cb.assists, bs.assists);
+  cb.steals = Math.max(cb.steals, bs.steals);
+  cb.blocks = Math.max(cb.blocks, bs.blocks);
+}
+
+function checkProGameAchievements(state, result) {
+  const player = state.player;
+  if (!player.hasPlayedProGame) { player.hasPlayedProGame = true; unlockAchievement(state, "pro_debut"); }
+  const flags = boxscoreFlags(result.boxscore);
+  if (flags.fifty) unlockAchievement(state, "pro_fifty");
+  if (flags.tripleDouble) unlockAchievement(state, "pro_triple_double");
+  return flags;
+}
+
+function playProGame(state, opponentName, opponentRating, pressure, label) {
+  const player = state.player;
+  const position = POSITIONS[player.position];
+  const context = proContext(state, opponentRating, pressure);
+  const result = simulateGame(player, position, context);
+  const ageInjuryMult = player.age < 30 ? 1 : (player.age < 34 ? 1.5 : 2.3);
+  if (result.fatigueTag === "veryLow" && RNG.chance(ENERGY_CONFIG.tweakInjuryChance * ageInjuryMult)) result.injury = true;
+  const cost = Math.round(20 + pressure * 55);
+  applyEnergyDelta(player, -cost);
+  if (result.win) state.season.wins++; else state.season.losses++;
+  recordProGameTotals(state, result.boxscore, result.win);
+  checkProGameAchievements(state, result);
+  if (result.injury) { player.injuryCount++; applyEnergyDelta(player, -10); }
+  const record = { stage: "pro", year: state.season.year, label, opponent: opponentName, win: result.win, yourScore: result.yourScore, oppScore: result.oppScore, boxscore: result.boxscore };
+  state.history.games.push(record);
+  state.season.gamesLog.push(record);
+  return result;
+}
+
+function advanceProStep(state, chosenSessions, narrativeChoiceIdx) {
+  resetLog(state);
+  const player = state.player;
+  const season = state.season;
+  const step = currentProStep(state);
+
+  const ev = getProNarrative(state);
+  if (ev) { state.log.narrative = { text: ev.text, chosenLabel: null }; season.pendingNarrative = null; }
+
+  if (step === "offseason") {
+    if (RNG.chance(0.15) && player.proYear > 1) {
+      const otherTeams = PRO_TEAMS.filter(t => t.name !== player.proTeam.name);
+      const newTeam = RNG.choice(otherTeams);
+      state.log.trade = `Traded to the ${newTeam.name} this offseason.`;
+      player.proTeam = { name: newTeam.name, tierRating: newTeam.tierRating };
+      season.teamRating = clamp(newTeam.tierRating + RNG.int(-4, 4), 30, 99);
+      season.teammateBaseline = clamp(season.teamRating - 4 + RNG.int(-3, 3), 25, 96);
+    }
+    (chosenSessions || []).slice(0, 2).forEach(id => {
+      const line = applyTrainingSession(player, id, 1.5, 2.4);
+      if (line) state.log.training.push(line);
+    });
+    weeklyRegen(player, ENERGY_CONFIG.proWeeklyRegen);
+    season.stepIndex++;
+    return state.log;
+  }
+
+  if (step === "marquee_game") {
+    const oppRating = clamp(season.teamRating + 6 + RNG.int(-5, 5), 25, 99);
+    const result = playProGame(state, "a nationally televised opponent", oppRating, 0.10, "Marquee Matchup");
+    state.log.game = { label: "Marquee Matchup", result };
+    weeklyRegen(player, 15);
+    season.stepIndex++;
+    return state.log;
+  }
+
+  if (step === "regular_season") {
+    const context = proContext(state, season.teamRating, 0.02);
+    const block = simulateGameBlock(player, POSITIONS[player.position], context, 60);
+    season.wins += block.wins; season.losses += block.losses;
+    season.regularAvgPerf = block.avgPerformance;
+    season.regularAvgPoints = block.avgBox.points;
+    const t = player.careerTotals.pro;
+    t.games += block.games; t.wins += block.wins; t.losses += block.losses;
+    t.points += block.avgBox.points * block.games; t.rebounds += block.avgBox.rebounds * block.games;
+    t.assists += block.avgBox.assists * block.games; t.steals += block.avgBox.steals * block.games;
+    t.blocks += block.avgBox.blocks * block.games; t.turnovers += block.avgBox.turnovers * block.games;
+    applyEnergyDelta(player, -40);
+    state.log.game = { label: "Regular Season", block };
+    weeklyRegen(player, 15);
+    season.stepIndex++;
+    return state.log;
+  }
+
+  if (step === "allstar_check") {
+    const position = POSITIONS[player.position];
+    const power = statPower(player.stats, position);
+    const allStarScore = power + (season.teamRating - 65) * 0.1;
+    season.allStar = allStarScore >= 80;
+    if (season.allStar) {
+      unlockAchievement(state, "pro_all_star");
+      player.awards.push({ stage: "pro", year: season.year, award: "All-Star" });
+      applyEnergyDelta(player, 15);
+      state.log.allStar = { selected: true };
+    } else {
+      state.log.allStar = { selected: false };
+    }
+    season.stepIndex++;
+    return state.log;
+  }
+
+  if (step === "playoffs") {
+    if (season.playoffRound === -1) {
+      const qualifyScore = season.teamRating * 0.5 + season.regularAvgPerf * 0.5 + RNG.gauss(0, 5);
+      season.madePlayoffs = qualifyScore >= 62;
+      if (!season.madePlayoffs) {
+        state.log.game = { label: "Playoffs", skipped: true, reason: "The team misses the playoffs this year." };
+        season.stepIndex++;
+        return state.log;
+      }
+      season.playoffRound = 0;
+    }
+    const round = PRO_PLAYOFF_ROUNDS[season.playoffRound];
+    const oppRating = clamp(season.teamRating + round.pressureAdd + RNG.int(-3, 3), 25, 99);
+    const result = playProGame(state, "a playoff opponent", oppRating, round.pressureAdd / 100, round.label);
+    state.log.game = { label: round.label, result };
+    season.playoffRound++;
+    weeklyRegen(player, 10);
+    if (round.id === "leagueFinal") { season.reachedFinals = true; unlockAchievement(state, "pro_finals"); player.awards.push({ stage: "pro", year: season.year, award: "Finals Appearance" }); }
+    if (!result.win) {
+      season.playoffEliminated = true;
+      season.stepIndex++;
+    } else if (season.playoffRound >= PRO_PLAYOFF_ROUNDS.length) {
+      season.wonChampionship = true;
+      unlockAchievement(state, "pro_champion");
+      player.awards.push({ stage: "pro", year: season.year, award: "League Champion" });
+      if (result.performanceRating >= 95 && RNG.chance(0.5)) player.awards.push({ stage: "pro", year: season.year, award: "Finals MVP" });
+      season.stepIndex++;
+    }
+    return state.log;
+  }
+
+  if (step === "awards") {
+    finalizeProSeasonAwards(state);
+    applyProAging(state);
+    const position = POSITIONS[player.position];
+    const power = statPower(player.stats, position);
+    if (power < 45) player.lowRatingStreak = (player.lowRatingStreak || 0) + 1; else player.lowRatingStreak = 0;
+    player.age++;
+
+    state.history.proSeasons.push({
+      year: season.year, team: player.proTeam.name, wins: season.wins, losses: season.losses,
+      allStar: season.allStar, madePlayoffs: season.madePlayoffs, reachedFinals: season.reachedFinals, wonChampionship: season.wonChampionship
+    });
+    if (player.proYear >= 10) unlockAchievement(state, "pro_ten_year");
+
+    const forceRetireAge = player.age >= 41;
+    const forceRetireDecline = (player.lowRatingStreak || 0) >= 2;
+    const forceRetire = forceRetireAge || forceRetireDecline;
+
+    state.log.banquet = {
+      year: season.year, wins: season.wins, losses: season.losses, allStar: season.allStar,
+      madePlayoffs: season.madePlayoffs, reachedFinals: season.reachedFinals, wonChampionship: season.wonChampionship,
+      forceRetire, forceRetireAge, forceRetireDecline, age: player.age
+    };
+
+    if (forceRetire) {
+      player.stage = "retired";
+      player.retirementReason = forceRetireAge ? "called it a career after a long run in the league" : "saw the skills fade and stepped away from the game";
+    }
+    return state.log;
+  }
+
+  return state.log;
+}
+
+function finalizeProSeasonAwards(state) {
+  const player = state.player;
+  const season = state.season;
+  const position = POSITIONS[player.position];
+  const power = statPower(player.stats, position);
+
+  if (season.regularAvgPoints >= 29) {
+    unlockAchievement(state, "pro_scoring_champ");
+    player.awards.push({ stage: "pro", year: season.year, award: "Scoring Champion" });
+  }
+  const dpoyScore = player.stats.defense * 0.6 + player.stats.rebounding * 0.4;
+  if (dpoyScore >= 88 && RNG.chance(0.4)) {
+    unlockAchievement(state, "pro_dpoy");
+    player.awards.push({ stage: "pro", year: season.year, award: "Defensive Player of the Year" });
+  }
+  if (player.proYear === 1 && power >= 75 && RNG.chance(0.5)) {
+    unlockAchievement(state, "pro_roy");
+    player.awards.push({ stage: "pro", year: season.year, award: "Rookie of the Year" });
+  }
+  if (season.allStar && power >= 90 && season.madePlayoffs && RNG.chance(0.4)) {
+    unlockAchievement(state, "pro_mvp");
+    player.awards.push({ stage: "pro", year: season.year, award: "MVP" });
+  }
+}
+
+function applyProAging(state) {
+  const player = state.player;
+  const position = POSITIONS[player.position];
+  const physicalKeys = ["speed", "rebounding", "defense"];
+  const mentalKeys = ["iq", "clutch", "shooting", "handles", "passing"];
+  const age = player.age;
+
+  if (age <= 23) {
+    position.primary.forEach(k => bumpStat(player.stats, k, RNG.int(1, 3)));
+    position.secondary.forEach(k => bumpStat(player.stats, k, RNG.int(0, 2)));
+  } else if (age <= 29) {
+    mentalKeys.forEach(k => { if (RNG.chance(0.5)) bumpStat(player.stats, k, RNG.int(0, 1)); });
+  } else if (age <= 33) {
+    physicalKeys.forEach(k => bumpStat(player.stats, k, -RNG.int(0, 2)));
+    mentalKeys.forEach(k => { if (RNG.chance(0.4)) bumpStat(player.stats, k, 1); });
+  } else {
+    physicalKeys.forEach(k => bumpStat(player.stats, k, -RNG.int(1, 4)));
+    mentalKeys.forEach(k => bumpStat(player.stats, k, -RNG.int(0, 2)));
+  }
+}
+
+function continueProCareer(state) {
+  state.player.proYear++;
+  startProSeason(state);
+  state.player.energy = ENERGY_MAX + (state.player.perkEnergyMaxBonus || 0);
+}
+
+function retireVoluntarily(state) {
+  state.player.stage = "retired";
+  state.player.retirementReason = "walked away from the game on his own terms";
+}
+
+
+/* ---- career-summary.js ---- */
+/* ============================================================
+   Hoop Dreams — career summary / Hall of Fame epilogue
+   ============================================================ */
+"use strict";
+
+function per(total, games) { return games > 0 ? Math.round((total / games) * 10) / 10 : 0; }
+
+function computeCareerSummary(state) {
+  const player = state.player;
+  const history = state.history;
+  const position = POSITIONS[player.position];
+
+  const proSeasons = history.proSeasons || [];
+  const collegeSeasons = history.collegeSeasons || [];
+  const hsSeasons = history.hsSeasons || [];
+
+  const totalProSeasons = proSeasons.length;
+  const championships = proSeasons.filter(s => s.wonChampionship).length;
+  const finalsTrips = proSeasons.filter(s => s.reachedFinals).length;
+  const allStarCount = proSeasons.filter(s => s.allStar).length;
+  const playoffAppearances = proSeasons.filter(s => s.madePlayoffs).length;
+  const majorAwardCount = (player.awards || []).filter(a => ["MVP", "Defensive Player of the Year", "Rookie of the Year", "Finals MVP", "Scoring Champion"].includes(a.award)).length;
+
+  const collegeChamp = collegeSeasons.some(s => s.wonNational);
+  const collegePOY = collegeSeasons.some(s => s.poy);
+  const hsChamp = hsSeasons.some(s => s.reachedStages && s.reachedStages.includes("champion"));
+
+  const pro = player.careerTotals.pro;
+  const college = player.careerTotals.college;
+  const hs = player.careerTotals.hs;
+
+  const proLine = { ppg: per(pro.points, pro.games), rpg: per(pro.rebounds, pro.games), apg: per(pro.assists, pro.games), games: pro.games };
+  const collegeLine = { ppg: per(college.points, college.games), rpg: per(college.rebounds, college.games), apg: per(college.assists, college.games), games: college.games };
+  const hsLine = { ppg: per(hs.points, hs.games), rpg: per(hs.rebounds, hs.games), apg: per(hs.assists, hs.games), games: hs.games };
+
+  let hofScore = 0, isHOF = false, grade = "";
+
+  if (totalProSeasons > 0) {
+    const longevityScore = clamp(totalProSeasons / 15, 0, 1) * 20;
+    const scoringScore = clamp(proLine.ppg / 30, 0, 1) * 20;
+    const hardwareRaw = championships * 15 + majorAwardCount * 10 + allStarCount * 4;
+    const hardwareScore = clamp(hardwareRaw / 100, 0, 1) * 40;
+    const collegeBonus = collegeChamp ? 5 : 0;
+    const hsBonus = hsChamp ? 3 : 0;
+    hofScore = Math.round(longevityScore + scoringScore + hardwareScore + collegeBonus + hsBonus);
+    isHOF = hofScore >= 55 && totalProSeasons >= 4;
+
+    if (isHOF) grade = "Hall of Famer";
+    else if (hofScore >= 40) grade = "All-Time Great";
+    else if (hofScore >= 25) grade = "Solid Pro Career";
+    else if (hofScore >= 12) grade = "Rotation Player";
+    else grade = "Journeyman";
+  } else {
+    let collegeScore = 0;
+    if (player.collegeTeam) {
+      const tierScore = { powerhouse: 30, major: 22, midmajor: 15, small: 9, walkon: 5 }[player.collegeTeam.tier] || 5;
+      collegeScore = tierScore + (collegeChamp ? 20 : 0) + (collegePOY ? 12 : 0) + collegeLine.ppg * 0.5;
+    }
+    hofScore = Math.round(clamp(collegeScore, 0, 100));
+    if (player.overseasCareerEndedEarly) grade = "Went Overseas — Never Made the League";
+    else if (collegeScore >= 40) grade = "Draft Snub, Hometown Legend";
+    else grade = "Hooper at Heart";
+  }
+
+  const epilogue = buildEpilogue(state, { proLine, collegeLine, hsLine, championships, allStarCount, majorAwardCount, collegeChamp, hsChamp, grade, isHOF, totalProSeasons });
+
+  return {
+    grade, isHOF, hofScore,
+    proLine, collegeLine, hsLine,
+    championships, finalsTrips, allStarCount, playoffAppearances, majorAwardCount,
+    collegeChamp, collegePOY, hsChamp,
+    achievements: player.achievementsUnlocked.slice(),
+    awards: player.awards.slice(),
+    epilogue
+  };
+}
+
+function buildEpilogue(state, s) {
+  const player = state.player;
+  const position = POSITIONS[player.position];
+  const paras = [];
+
+  paras.push(`${player.name} started it all as a freshman at ${player.teamName}, a ${position.name.toLowerCase()} with a chip on their shoulder and everything still to prove.`);
+
+  const hsBits = [];
+  if (s.hsChamp) hsBits.push("a state championship banner");
+  hsBits.push(`a high school line of ${s.hsLine.ppg} PPG, ${s.hsLine.rpg} RPG, and ${s.hsLine.apg} APG over ${s.hsLine.games} games`);
+  paras.push(`Four years later, ${player.name} left high school with ${hsBits.join(" and ")}.`);
+
+  if (player.collegeTeam) {
+    const collegeBits = [`suited up for ${player.collegeTeam.name}`];
+    if (s.collegeChamp) collegeBits.push("won a national championship");
+    if (!s.collegeChamp && state.history.collegeSeasons.some(cs => cs.wonConfTourney)) collegeBits.push("won a conference tournament title");
+    collegeBits.push(`posted ${s.collegeLine.ppg} PPG over ${s.collegeLine.games} college games`);
+    paras.push(`In college, ${player.name} ${collegeBits.join(", ")}.`);
+  }
+
+  if (s.totalProSeasons > 0) {
+    const proBits = [`played ${s.totalProSeasons} professional season${s.totalProSeasons === 1 ? "" : "s"}`];
+    if (s.championships > 0) proBits.push(`won ${s.championships} championship${s.championships === 1 ? "" : "s"}`);
+    if (s.allStarCount > 0) proBits.push(`made ${s.allStarCount} All-Star team${s.allStarCount === 1 ? "" : "s"}`);
+    if (s.majorAwardCount > 0) proBits.push(`collected ${s.majorAwardCount} major award${s.majorAwardCount === 1 ? "" : "s"}`);
+    proBits.push(`retired with career averages of ${s.proLine.ppg} PPG, ${s.proLine.rpg} RPG, and ${s.proLine.apg} APG over ${s.proLine.games} games`);
+    paras.push(`At the professional level, ${player.name} ${proBits.join(", ")}. ${player.name} ${player.retirementReason || "eventually stepped away from the game"}.`);
+    if (s.isHOF) paras.push(`When the votes came in, there was little debate: ${player.name} is a Hall of Famer, a career that started on a freshman-year gym floor and ended among the game's all-time greats.`);
+    else paras.push(`It wasn't a Hall of Fame résumé, but it was a career worth being proud of — a long way from that first freshman tryout.`);
+  } else if (player.stage === "retired") {
+    if (player.overseasCareerEndedEarly) {
+      paras.push(`The pro dream didn't pan out. After stints overseas failed to earn another shot, ${player.name} hung it up — a long way from that first freshman tryout, but the league never called.`);
+    } else {
+      paras.push(`The pro dream ended at the draft. ${player.name} ${player.retirementReason || "walked away from competitive basketball"}, closing the book on a journey that started as a freshman with everything still to prove.`);
+    }
+  }
+
+  return paras;
+}
+
+
+/* ---- app.js ---- */
+/* ============================================================
+   Hoop Dreams — UI controller
+   ============================================================ */
+"use strict";
+
+const SAVE_KEY = "hoopDreamsSave_v1";
+let STATE = null;
+
+const ui = {
+  showingResult: false, lastLog: null, lastLogKind: null,
+  selectedSessions: [], narrativeChoiceIdx: null,
+  weekKey: null,
+  creation: { name: "", teamName: DEFAULT_TEAM_NAME, position: null, starTier: 3, stats: newStatBlock(), pool: CREATION_POOL },
+  lastDraftResult: null
+};
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function saveState() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(STATE, replacer)); } catch (e) { /* storage unavailable, ignore */ }
+}
+function replacer(key, value) { if (value instanceof Set) return { __set: Array.from(value) }; return value; }
+function reviver(key, value) { if (value && value.__set) return new Set(value.__set); return value; }
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw, reviver);
+  } catch (e) { return null; }
+}
+
+function resetCreationUI() {
+  ui.creation = { name: "", teamName: DEFAULT_TEAM_NAME, position: null, starTier: 3, stats: newStatBlock(), pool: CREATION_POOL };
+}
+
+/* Fullscreen button lives outside #app so render()'s innerHTML swaps never remove it. */
+function initFullscreenButton() {
+  const btn = document.getElementById("fullscreen-toggle");
+  if (!btn) return;
+  const el = document.documentElement;
+  const requestFs = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+  const exitFs = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+  if (!requestFs) { btn.style.display = "none"; return; }
+  btn.addEventListener("click", () => {
+    const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+    if (!isFullscreen) {
+      try {
+        const result = requestFs.call(el);
+        if (result && typeof result.catch === "function") result.catch(() => {});
+      } catch (e) { /* ignore */ }
+    } else if (exitFs) {
+      exitFs.call(document);
+    }
+  });
+  document.addEventListener("fullscreenchange", updateFullscreenIcon);
+  document.addEventListener("webkitfullscreenchange", updateFullscreenIcon);
+}
+
+function updateFullscreenIcon() {
+  const btn = document.getElementById("fullscreen-toggle");
+  if (!btn) return;
+  const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+  btn.textContent = isFullscreen ? "⤢" : "⛶";
+  btn.title = isFullscreen ? "Exit fullscreen" : "Toggle fullscreen";
+}
+
+function init() {
+  STATE = loadState();
+  if (STATE && STATE.season && STATE.season.reachedStages && !(STATE.season.reachedStages instanceof Set)) {
+    STATE.season.reachedStages = new Set(STATE.season.reachedStages);
+  }
+  document.getElementById("app").addEventListener("click", onAppClick);
+  initFullscreenButton();
+  render();
+}
+
+/* ---------------- Render dispatcher ---------------- */
+function render() {
+  const app = document.getElementById("app");
+  if (!STATE) { app.innerHTML = renderCreateScreen(); return; }
+  if (ui.showingResult) { app.innerHTML = renderResultScreen(); return; }
+
+  switch (STATE.player.stage) {
+    case "hs": app.innerHTML = renderHSHub(); break;
+    case "recruiting": app.innerHTML = renderRecruiting(); break;
+    case "college": app.innerHTML = renderCollegeHub(); break;
+    case "draft": app.innerHTML = renderDraftScreen(); break;
+    case "pro": app.innerHTML = renderProHub(); break;
+    case "retired": app.innerHTML = renderRetirement(); break;
+    default: app.innerHTML = "<p>Unknown state.</p>";
+  }
+}
+
+/* ---------------- Shared bits ---------------- */
+function statsPanel(stats) {
+  return `<div class="stats-panel">${STAT_KEYS.map(k => `
+    <div class="stat-row" title="${escapeHtml(STAT_DESCRIPTIONS[k])}">
+      <span class="stat-label">${STAT_LABELS[k]}</span>
+      <div class="stat-bar"><div class="stat-bar-fill" style="width:${stats[k]}%"></div></div>
+      <span class="stat-value">${stats[k]}</span>
+    </div>`).join("")}</div>`;
+}
+
+function energyBar(player) {
+  const max = ENERGY_MAX + (player.perkEnergyMaxBonus || 0);
+  const pct = clamp(Math.round((player.energy / max) * 100), 0, 100);
+  const cls = pct < 20 ? "energy-critical" : pct < 35 ? "energy-low" : "energy-ok";
+  return `<div class="energy-wrap"><div class="energy-label">Energy ${player.energy}/${max}</div>
+    <div class="energy-bar"><div class="energy-bar-fill ${cls}" style="width:${pct}%"></div></div></div>`;
+}
+
+function starGlyphs(stars) {
+  return "★".repeat(stars) + "☆".repeat(5 - stars);
+}
+
+function stockStarBlock(stock, noun) {
+  const stars = stockToStars(stock);
+  return `<div class="star-rating">${starGlyphs(stars)} <span class="star-caption">${stars}-star ${escapeHtml(noun)} (${stock})</span></div>`;
+}
+
+function boxscoreTable(bs) {
+  return `<table class="boxscore"><tbody>
+    <tr><td>PTS</td><td>${bs.points}</td><td>REB</td><td>${bs.rebounds}</td><td>AST</td><td>${bs.assists}</td></tr>
+    <tr><td>STL</td><td>${bs.steals}</td><td>BLK</td><td>${bs.blocks}</td><td>TO</td><td>${bs.turnovers}</td></tr>
+    <tr><td>FG%</td><td colspan="5">${bs.fgPct}%</td></tr>
+  </tbody></table>`;
+}
+
+function achName(id) { const a = ALL_ACHIEVEMENTS.find(x => x.id === id); return a ? a.name : id; }
+function achDesc(id) { const a = ALL_ACHIEVEMENTS.find(x => x.id === id); return a ? a.desc : ""; }
+function perkName(id) { return PERKS[id] ? PERKS[id].name : id; }
+
+function unlockedBlock(log) {
+  let html = "";
+  if (log.achievements && log.achievements.length) {
+    html += `<div class="toast-block achievements">${log.achievements.map(id => `<div class="toast">🏆 Achievement unlocked: <strong>${escapeHtml(achName(id))}</strong> — ${escapeHtml(achDesc(id))}</div>`).join("")}</div>`;
+  }
+  if (log.perks && log.perks.length) {
+    html += `<div class="toast-block perks">${log.perks.map(id => `<div class="toast">⭐ Perk earned: <strong>${escapeHtml(perkName(id))}</strong></div>`).join("")}</div>`;
+  }
+  return html;
+}
+
+function narrativeBlockReadOnly(narrLog) {
+  if (!narrLog) return "";
+  const chosen = narrLog.chosenLabel ? `<div class="narrative-choice-made">You chose: ${escapeHtml(narrLog.chosenLabel)}</div>` : "";
+  return `<div class="narrative-box"><p>${escapeHtml(narrLog.text)}</p>${chosen}</div>`;
+}
+
+/* ---------------- Character creation ---------------- */
+function renderCreateScreen() {
+  const c = ui.creation;
+  const positionCards = Object.values(POSITIONS).map(p => `
+    <div class="position-card ${c.position === p.key ? "selected" : ""}" data-action="create-select-position" data-pos="${p.key}">
+      <h3>${p.name}</h3><p>${escapeHtml(p.blurb)}</p>
+      <p class="pos-detail">Primary: ${p.primary.map(k => STAT_LABELS[k]).join(", ")}</p>
+    </div>`).join("");
+
+  const starCards = CREATION_STAR_TIERS.map(t => `
+    <div class="position-card star-tier-card ${c.starTier === t.stars ? "selected" : ""}" data-action="create-select-star-tier" data-stars="${t.stars}">
+      <h3 class="star-rating">${starGlyphs(t.stars)}</h3>
+      <p><strong>${escapeHtml(t.label)}</strong> — ${escapeHtml(t.blurb)}</p>
+      <p class="pos-detail">${t.pool} starting points</p>
+    </div>`).join("");
+
+  const statRows = STAT_KEYS.map(k => `
+    <div class="alloc-row">
+      <span class="alloc-label">${STAT_LABELS[k]}</span>
+      <button class="small-btn" data-action="create-stat-delta" data-stat="${k}" data-delta="-1" ${c.stats[k] <= STAT_BASE_START ? "disabled" : ""}>−</button>
+      <span class="alloc-value">${c.stats[k]}</span>
+      <button class="small-btn" data-action="create-stat-delta" data-stat="${k}" data-delta="1" ${(c.stats[k] >= STAT_MAX_START || c.pool <= 0) ? "disabled" : ""}>+</button>
+    </div>`).join("");
+
+  const canStart = c.position && c.pool === 0;
+
+  return `
+  <div class="screen create-screen">
+    <h1>Hoop Dreams</h1>
+    <p class="subtitle">Freshman year to retirement. Build your player.</p>
+    <div class="create-form">
+      <label>Player Name<input type="text" id="input-name" value="${escapeHtml(c.name)}" placeholder="Alex Carter" /></label>
+      <label>High School Team<input type="text" id="input-team" value="${escapeHtml(c.teamName)}" placeholder="${escapeHtml(DEFAULT_TEAM_NAME)}" /></label>
+    </div>
+    <h2>Choose Your Position</h2>
+    <div class="position-grid">${positionCards}</div>
+    <h2>Incoming Hype</h2>
+    <p class="subtitle">How touted are you coming in? Higher hype means more starting attribute points to spend — but choosing again resets your allocation.</p>
+    <div class="position-grid">${starCards}</div>
+    <h2>Allocate Attributes <span class="pool-counter">${c.pool} points remaining</span></h2>
+    <div class="alloc-grid">${statRows}</div>
+    <button class="primary-btn" data-action="create-start" ${canStart ? "" : "disabled"}>Start Freshman Year</button>
+  </div>`;
+}
+
+function syncCreationInputs() {
+  const nameEl = document.getElementById("input-name");
+  const teamEl = document.getElementById("input-team");
+  if (nameEl) ui.creation.name = nameEl.value;
+  if (teamEl) ui.creation.teamName = teamEl.value;
+}
+
+/* ---------------- HS hub ---------------- */
+function ensureWeekUiFresh(key) {
+  if (ui.weekKey !== key) { ui.selectedSessions = []; ui.narrativeChoiceIdx = null; ui.weekKey = key; }
+}
+
+function renderHSHub() {
+  const player = STATE.player, season = STATE.season;
+  const week = currentHSWeek(STATE);
+  ensureWeekUiFresh(`hs-${player.hsYear}-${player.hsWeek}`);
+
+  const header = `
+    <div class="hub-header">
+      <div><h2>${escapeHtml(player.name)} <span class="pos-badge">${POSITIONS[player.position].name}</span></h2>
+      <p>${escapeHtml(player.teamName)} — ${HS_YEAR_LABELS[player.hsYear]} Year</p></div>
+      <div class="hub-meta">
+        <p>Week ${player.hsWeek} of 15</p>
+        <p>Record: ${season.wins}-${season.losses}</p>
+        ${energyBar(player)}
+      </div>
+    </div>`;
+
+  if (week.type === "banquet") {
+    return `<div class="screen hub-screen">${header}
+      <div class="action-panel"><h3>End of Season Banquet</h3>
+      <p>The team gathers to celebrate the season. Time to see how it all added up.</p>
+      <button class="primary-btn" data-action="hs-advance">See Season Summary</button></div>
+      ${statsPanel(player.stats)}</div>`;
+  }
+
+  const ev = getWeekNarrative(STATE);
+  const narrativeHtml = renderNarrativeInteractive(ev);
+
+  let gameInfo = "";
+  if (week.type === "game") {
+    const isBye = season.eliminated && week.stage !== "regular" && week.stage !== "rivalry";
+    if (isBye) {
+      gameInfo = `<div class="game-preview bye">Season already ended in the playoffs. This week is practice only.</div>`;
+    } else {
+      const label = week.stage === "regular" ? "Regular Season" : week.stage === "rivalry" ? "Rivalry Night" : HS_STAGE_LABELS[week.stage];
+      gameInfo = `<div class="game-preview"><strong>${label}</strong> vs ${escapeHtml(week.opponentName)} (opponent rating ${week.opponentRating})</div>`;
+    }
+  } else {
+    gameInfo = `<div class="game-preview">Preseason Tryouts — no game this week.</div>`;
+  }
+
+  const pool = getWeekTrainingPool();
+  const trainingHtml = renderTrainingPicker(pool);
+
+  return `<div class="screen hub-screen">${header}
+    ${narrativeHtml}
+    ${gameInfo}
+    ${trainingHtml}
+    <button class="primary-btn" data-action="hs-advance">Advance Week</button>
+    ${statsPanel(player.stats)}
+  </div>`;
+}
+
+function getWeekTrainingPool() {
+  const key = `hs-${STATE.player.hsYear}-${STATE.player.hsWeek}`;
+  if (STATE.season.trainingPoolKey === key) return STATE.season.trainingPool;
+  const pool = generateWeeklyPool(4);
+  STATE.season.trainingPool = pool;
+  STATE.season.trainingPoolKey = key;
+  return pool;
+}
+
+function renderNarrativeInteractive(ev) {
+  if (!ev) return "";
+  if (!ev.choices) return `<div class="narrative-box"><p>${escapeHtml(ev.text)}</p></div>`;
+  const choiceButtons = ev.choices.map((c, idx) => `
+    <button class="choice-btn ${ui.narrativeChoiceIdx === idx ? "selected" : ""}" data-action="select-narrative-choice" data-choice="${idx}">${escapeHtml(c.label)}</button>`).join("");
+  return `<div class="narrative-box"><p>${escapeHtml(ev.text)}</p><div class="choice-row">${choiceButtons}</div></div>`;
+}
+
+function renderTrainingPicker(pool) {
+  const items = pool.map(t => {
+    const selected = ui.selectedSessions.includes(t.id);
+    const disable = !selected && ui.selectedSessions.length >= 2;
+    return `<div class="session-card ${selected ? "selected" : ""} ${disable ? "disabled" : ""}" data-action="toggle-session" data-session="${t.id}">
+      <h4>${escapeHtml(t.name)}</h4><p>${escapeHtml(t.desc)}</p></div>`;
+  }).join("");
+  return `<h3>Pick 2 Training Sessions (${ui.selectedSessions.length}/2)</h3><div class="session-grid">${items}</div>`;
+}
+
+/* ---------------- Recruiting ---------------- */
+function renderRecruiting() {
+  const player = STATE.player;
+  if (!STATE._offers || STATE._offersFor !== player.name + player.recruitingStock) {
+    STATE._offers = generateCollegeOffers(STATE);
+    STATE._offersFor = player.name + player.recruitingStock;
+  }
+  const offers = STATE._offers;
+  const cards = offers.map((o, idx) => `
+    <div class="offer-card" data-action="recruit-choose" data-offer-idx="${idx}">
+      <h3>${escapeHtml(o.school)}</h3><p>${o.label}</p><p class="pos-detail">Program rating: ${o.rating}</p>
+    </div>`).join("");
+
+  return `<div class="screen">
+    <h1>Recruiting</h1>
+    <p>${escapeHtml(player.name)} finished a high school career with a recruiting rating of <strong>${player.recruitingStock}</strong>.</p>
+    ${stockStarBlock(player.recruitingStock, "recruit")}
+    <p>Offers have come in. Where do you want to play?</p>
+    <div class="offer-grid">${cards}</div>
+    ${statsPanel(player.stats)}
+  </div>`;
+}
+
+/* ---------------- College hub ---------------- */
+function renderCollegeHub() {
+  const player = STATE.player, season = STATE.season;
+  const step = currentCollegeStep(STATE);
+  ensureWeekUiFresh(`college-${season.year}-${season.stepIndex}`);
+
+  const header = `
+    <div class="hub-header">
+      <div><h2>${escapeHtml(player.name)} <span class="pos-badge">${POSITIONS[player.position].name}</span></h2>
+      <p>${escapeHtml(player.collegeTeam.name)} — Year ${season.year}</p></div>
+      <div class="hub-meta"><p>Record: ${season.wins}-${season.losses}</p>${energyBar(player)}</div>
+    </div>`;
+
+  const ev = getCollegeNarrative(STATE);
+  const narrativeHtml = ev ? `<div class="narrative-box"><p>${escapeHtml(ev.text)}</p></div>` : "";
+
+  const stepLabels = {
+    preseason: "Preseason Camp", showcase: "Non-Conference Showcase", midseason: "Midseason Focus",
+    conference: "Conference Slate", rivalry: "Rivalry Game", conf_tourney: "Conference Tournament",
+    national_tourney: "National Tournament", awards: "Postseason Awards"
+  };
+
+  let body = "";
+  if (step === "preseason" || step === "midseason") {
+    const pool = getCollegeTrainingPool();
+    body = renderTrainingPicker(pool);
+  } else if (step === "showcase") {
+    body = `<div class="game-preview">Non-conference showcase game — national TV audience.</div>`;
+  } else if (step === "conference") {
+    body = `<div class="game-preview">A full conference slate. Results will be summarized as a season average.</div>`;
+  } else if (step === "rivalry") {
+    body = `<div class="game-preview">Rivalry Game vs ${escapeHtml(season.rivalSchool)}.</div>`;
+  } else if (step === "conf_tourney") {
+    const round = CONF_TOURNEY_ROUNDS[season.confTourneyStage];
+    body = round ? `<div class="game-preview">${round.label} — win or go home.</div>` : "";
+  } else if (step === "national_tourney") {
+    body = season.nationalBid || season.nationalRound >= 0
+      ? `<div class="game-preview">National Tournament — ${season.nationalRound >= 0 ? COLLEGE_TOURNEY_ROUNDS[season.nationalRound].label : "checking bid status"}.</div>`
+      : `<div class="game-preview">Waiting to see if the résumé earns a bid...</div>`;
+  } else if (step === "awards") {
+    body = `<div class="action-panel"><h3>Season Wrap-Up</h3><p>Click below to see how the year shakes out.</p></div>`;
+  }
+
+  return `<div class="screen hub-screen">${header}
+    ${narrativeHtml}
+    <h3>${stepLabels[step]}</h3>
+    ${body}
+    <button class="primary-btn" data-action="college-advance">${step === "awards" ? "Finish Season" : "Continue"}</button>
+    ${statsPanel(player.stats)}
+  </div>`;
+}
+
+function getCollegeTrainingPool() {
+  const key = `college-${STATE.season.year}-${STATE.season.stepIndex}`;
+  if (STATE.season.trainingPoolKey === key) return STATE.season.trainingPool;
+  const pool = generateWeeklyPool(4);
+  STATE.season.trainingPool = pool;
+  STATE.season.trainingPoolKey = key;
+  return pool;
+}
+
+/* ---------------- Draft ---------------- */
+function renderDraftScreen() {
+  const player = STATE.player;
+  const r = ui.lastDraftResult;
+
+  if (!r) {
+    return `<div class="screen">
+      <h1>Draft Night</h1>
+      <p>${escapeHtml(player.name)} declared for the draft with a draft stock of <strong>${player.draftStock}</strong>.</p>
+      ${stockStarBlock(player.draftStock, "prospect")}
+      <button class="primary-btn" data-action="draft-attempt">Enter the Draft</button>
+      ${statsPanel(player.stats)}
+    </div>`;
+  }
+
+  if (r.drafted) {
+    return `<div class="screen">
+      <h1>Drafted!</h1>
+      <p>${escapeHtml(player.name)} was selected with pick #${r.pickNumber} by the <strong>${escapeHtml(r.team.name)}</strong>.</p>
+      <button class="primary-btn" data-action="draft-accept">Begin Pro Career</button>
+    </div>`;
+  }
+
+  const overseasBlocked = player.overseasCareerEndedEarly;
+  return `<div class="screen">
+    <h1>Undrafted</h1>
+    <p>${escapeHtml(player.name)}'s name wasn't called on draft night.</p>
+    <div class="choice-column">
+      <button class="primary-btn" data-action="draft-sign-ufa">Sign as an Undrafted Free Agent</button>
+      ${overseasBlocked ? "" : `<button class="secondary-btn" data-action="draft-go-overseas">Go Play Overseas for a Year</button>`}
+      <button class="secondary-btn" data-action="draft-retire">Walk Away From Basketball</button>
+    </div>
+  </div>`;
+}
+
+/* ---------------- Pro hub ---------------- */
+function renderProHub() {
+  const player = STATE.player, season = STATE.season;
+  const step = currentProStep(STATE);
+  ensureWeekUiFresh(`pro-${season.year}-${season.stepIndex}`);
+
+  const header = `
+    <div class="hub-header">
+      <div><h2>${escapeHtml(player.name)} <span class="pos-badge">${POSITIONS[player.position].name}</span></h2>
+      <p>${escapeHtml(player.proTeam.name)} — Pro Year ${season.year} (Age ${player.age})</p></div>
+      <div class="hub-meta"><p>Record: ${season.wins}-${season.losses}</p>${energyBar(player)}</div>
+    </div>`;
+
+  const ev = getProNarrative(STATE);
+  const narrativeHtml = ev ? `<div class="narrative-box"><p>${escapeHtml(ev.text)}</p></div>` : "";
+
+  const stepLabels = {
+    offseason: "Offseason Training", marquee_game: "Marquee Matchup", regular_season: "Regular Season",
+    allstar_check: "All-Star Break", playoffs: "Playoffs", awards: "Season Wrap-Up"
+  };
+
+  let body = "";
+  if (step === "offseason") {
+    const pool = getProTrainingPool();
+    body = renderTrainingPicker(pool);
+  } else if (step === "marquee_game") {
+    body = `<div class="game-preview">A nationally televised showcase game.</div>`;
+  } else if (step === "regular_season") {
+    body = `<div class="game-preview">A full 60-game regular season slate, simulated as a season average.</div>`;
+  } else if (step === "allstar_check") {
+    body = `<div class="action-panel">Checking if this season's play earns an All-Star nod...</div>`;
+  } else if (step === "playoffs") {
+    const round = PRO_PLAYOFF_ROUNDS[season.playoffRound] || PRO_PLAYOFF_ROUNDS[0];
+    body = `<div class="game-preview">${season.playoffRound >= 0 ? round.label : "Checking playoff seeding..."}</div>`;
+  } else if (step === "awards") {
+    body = `<div class="action-panel"><h3>Season Wrap-Up</h3><p>See how the year shakes out — and whether it's time to keep playing.</p></div>`;
+  }
+
+  return `<div class="screen hub-screen">${header}
+    ${narrativeHtml}
+    <h3>${stepLabels[step]}</h3>
+    ${body}
+    <button class="primary-btn" data-action="pro-advance">${step === "awards" ? "Finish Season" : "Continue"}</button>
+    ${statsPanel(player.stats)}
+  </div>`;
+}
+
+function getProTrainingPool() {
+  const key = `pro-${STATE.season.year}-${STATE.season.stepIndex}`;
+  if (STATE.season.trainingPoolKey === key) return STATE.season.trainingPool;
+  const pool = generateWeeklyPool(4);
+  STATE.season.trainingPool = pool;
+  STATE.season.trainingPoolKey = key;
+  return pool;
+}
+
+/* ---------------- Result screens ---------------- */
+function renderResultScreen() {
+  const log = ui.lastLog;
+  if (ui.lastLogKind === "hs") return renderHSResult(log);
+  if (ui.lastLogKind === "college") return renderCollegeResult(log);
+  if (ui.lastLogKind === "pro") return renderProResult(log);
+  return "<div class='screen'>...</div>";
+}
+
+function gameResultBlock(result, oppLabelPrefix) {
+  if (!result) return "";
+  const outcome = result.win ? "WIN" : "LOSS";
+  const flags = boxscoreFlags(result.boxscore);
+  const badges = [];
+  if (flags.tripleDouble) badges.push("Triple-Double!");
+  else if (flags.doubleDouble) badges.push("Double-Double");
+  if (result.buzzerBeater) badges.push("Buzzer Beater!");
+  if (result.injury) badges.push("Minor injury — needs to manage energy better");
+  return `<div class="game-result ${result.win ? "win" : "loss"}">
+    <h3>${outcome} — ${result.yourScore} to ${result.oppScore}</h3>
+    ${boxscoreTable(result.boxscore)}
+    ${badges.length ? `<div class="badge-row">${badges.map(b => `<span class="badge">${escapeHtml(b)}</span>`).join("")}</div>` : ""}
+  </div>`;
+}
+
+function renderHSResult(log) {
+  const player = STATE.player;
+  let body = "";
+  body += log.training.length ? `<div class="training-log">${log.training.map(t => `<p>${escapeHtml(t.name)}: ${escapeHtml(t.detail)}</p>`).join("")}</div>` : "";
+  body += narrativeBlockReadOnly(log.narrative);
+
+  if (log.game) {
+    if (log.game.isBye) body += `<div class="game-preview bye">${escapeHtml(log.game.reason)}</div>`;
+    else body += gameResultBlock(log.game.result);
+  }
+  body += unlockedBlock(log);
+
+  let banquetBlock = "";
+  let continueLabel = "Continue";
+  if (log.banquet) {
+    const b = log.banquet;
+    banquetBlock = `<div class="banquet-block"><h3>${HS_YEAR_LABELS[b.year]} Year Recap</h3>
+      <p>Final record: ${b.wins}-${b.losses}</p>
+      <ul>${b.goalsEvaluated.map(g => `<li class="${g.done ? "goal-done" : "goal-missed"}">${g.done ? "✔" : "✘"} ${escapeHtml(g.name)} — ${escapeHtml(g.desc)}</li>`).join("")}</ul>
+      </div>`;
+    if (player.stage === "recruiting") continueLabel = "Continue to Recruiting";
+    else continueLabel = `Continue to ${HS_YEAR_LABELS[player.hsYear]} Year`;
+  }
+
+  return `<div class="screen">
+    <h2>${log.banquet ? "Season Complete" : `Week Recap`}</h2>
+    ${body}${banquetBlock}
+    <button class="primary-btn" data-action="hs-continue">${continueLabel}</button>
+  </div>`;
+}
+
+function renderCollegeResult(log) {
+  const player = STATE.player;
+  let body = "";
+  body += log.training && log.training.length ? `<div class="training-log">${log.training.map(t => `<p>${escapeHtml(t.name)}: ${escapeHtml(t.detail)}</p>`).join("")}</div>` : "";
+  body += narrativeBlockReadOnly(log.narrative);
+  if (log.trade) body += `<div class="narrative-box"><p>${escapeHtml(log.trade)}</p></div>`;
+
+  if (log.game) {
+    if (log.game.skipped) body += `<div class="game-preview bye">${escapeHtml(log.game.reason)}</div>`;
+    else if (log.game.block) {
+      body += `<div class="game-result"><h3>Conference Slate: ${log.game.block.wins}-${log.game.block.losses}</h3>${boxscoreTable(log.game.block.avgBox)}<p class="pos-detail">(season averages per game)</p></div>`;
+    } else if (log.game.result) {
+      body += `<h4>${escapeHtml(log.game.label)}</h4>${gameResultBlock(log.game.result)}`;
+    }
+  }
+  body += unlockedBlock(log);
+
+  let banquetBlock = "";
+  let footer = `<button class="primary-btn" data-action="college-continue">Continue</button>`;
+  if (log.banquet) {
+    const b = log.banquet;
+    banquetBlock = `<div class="banquet-block"><h3>Season ${b.year} Recap</h3>
+      <p>Record: ${b.wins}-${b.losses}</p>
+      <p>${b.wonNational ? "National Champions!" : b.wonConfTourney ? "Conference Tournament Champions" : "Season complete."}</p>
+      ${b.poy ? `<p>Conference Player of the Year!</p>` : ""}
+      <p>Draft stock: <strong>${b.draftStock}</strong></p>
+      ${stockStarBlock(b.draftStock, "prospect")}</div>`;
+    if (b.mustDeclare) {
+      footer = `<div class="choice-column"><p>Out of college eligibility — must declare for the draft.</p>
+        <button class="primary-btn" data-action="college-declare">Declare for the Draft</button></div>`;
+    } else {
+      footer = `<div class="choice-column">
+        <button class="primary-btn" data-action="college-return">Return for Another Season</button>
+        <button class="secondary-btn" data-action="college-declare">Declare for the Draft</button></div>`;
+    }
+  }
+
+  return `<div class="screen"><h2>${log.banquet ? "Season Complete" : "Step Recap"}</h2>${body}${banquetBlock}${footer}</div>`;
+}
+
+function renderProResult(log) {
+  const player = STATE.player;
+  let body = "";
+  body += log.training && log.training.length ? `<div class="training-log">${log.training.map(t => `<p>${escapeHtml(t.name)}: ${escapeHtml(t.detail)}</p>`).join("")}</div>` : "";
+  body += narrativeBlockReadOnly(log.narrative);
+  if (log.trade) body += `<div class="narrative-box"><p>${escapeHtml(log.trade)}</p></div>`;
+
+  if (log.allStar) {
+    body += log.allStar.selected ? `<div class="game-result win"><h3>All-Star Selection!</h3></div>` : `<div class="game-preview">No All-Star nod this year.</div>`;
+  }
+
+  if (log.game) {
+    if (log.game.skipped) body += `<div class="game-preview bye">${escapeHtml(log.game.reason)}</div>`;
+    else if (log.game.block) {
+      body += `<div class="game-result"><h3>Regular Season: ${log.game.block.wins}-${log.game.block.losses}</h3>${boxscoreTable(log.game.block.avgBox)}<p class="pos-detail">(season averages per game)</p></div>`;
+    } else if (log.game.result) {
+      body += `<h4>${escapeHtml(log.game.label)}</h4>${gameResultBlock(log.game.result)}`;
+    }
+  }
+  body += unlockedBlock(log);
+
+  let banquetBlock = "";
+  let footer = `<button class="primary-btn" data-action="pro-continue">Continue</button>`;
+  if (log.banquet) {
+    const b = log.banquet;
+    banquetBlock = `<div class="banquet-block"><h3>Pro Season ${b.year} Recap (Age ${b.age})</h3>
+      <p>Record: ${b.wins}-${b.losses}</p>
+      <p>${b.wonChampionship ? "League Champions!" : b.reachedFinals ? "Reached the League Finals" : b.madePlayoffs ? "Made the Playoffs" : "Missed the playoffs."}</p>
+      ${b.allStar ? "<p>All-Star selection.</p>" : ""}</div>`;
+    if (b.forceRetire) {
+      banquetBlock += `<div class="narrative-box"><p>${escapeHtml(player.name)} ${escapeHtml(player.retirementReason)}.</p></div>`;
+      footer = `<button class="primary-btn" data-action="pro-continue">See Career Summary</button>`;
+    } else {
+      footer = `<div class="choice-column">
+        <button class="primary-btn" data-action="pro-continue-career">Play Another Season</button>
+        <button class="secondary-btn" data-action="pro-retire">Retire</button></div>`;
+    }
+  }
+
+  return `<div class="screen"><h2>${log.banquet ? "Season Complete" : "Step Recap"}</h2>${body}${banquetBlock}${footer}</div>`;
+}
+
+/* ---------------- Retirement / career summary ---------------- */
+function renderRetirement() {
+  const s = computeCareerSummary(STATE);
+  const player = STATE.player;
+
+  const statLines = [];
+  if (s.hsLine.games > 0) statLines.push(`<tr><td>High School</td><td>${s.hsLine.games}</td><td>${s.hsLine.ppg}</td><td>${s.hsLine.rpg}</td><td>${s.hsLine.apg}</td></tr>`);
+  if (s.collegeLine.games > 0) statLines.push(`<tr><td>College</td><td>${s.collegeLine.games}</td><td>${s.collegeLine.ppg}</td><td>${s.collegeLine.rpg}</td><td>${s.collegeLine.apg}</td></tr>`);
+  if (s.proLine.games > 0) statLines.push(`<tr><td>Pro</td><td>${s.proLine.games}</td><td>${s.proLine.ppg}</td><td>${s.proLine.rpg}</td><td>${s.proLine.apg}</td></tr>`);
+
+  return `<div class="screen retirement-screen">
+    <h1>${s.isHOF ? "🏆 " : ""}${escapeHtml(player.name)}: ${escapeHtml(s.grade)}</h1>
+    ${s.epilogue.map(p => `<p>${escapeHtml(p)}</p>`).join("")}
+    <table class="career-table"><thead><tr><th>Level</th><th>GP</th><th>PPG</th><th>RPG</th><th>APG</th></tr></thead>
+    <tbody>${statLines.join("")}</tbody></table>
+    <h3>Awards (${s.awards.length})</h3>
+    <ul class="award-list">${s.awards.map(a => `<li>${a.stage.toUpperCase()} Yr${a.year}: ${escapeHtml(a.award)}</li>`).join("") || "<li>None</li>"}</ul>
+    <h3>Achievements (${s.achievements.length})</h3>
+    <ul class="award-list">${s.achievements.map(id => `<li>${escapeHtml(achName(id))}</li>`).join("") || "<li>None</li>"}</ul>
+    <button class="primary-btn" data-action="restart-career">Start a New Career</button>
+  </div>`;
+}
+
+/* ---------------- Event delegation ---------------- */
+function onAppClick(e) {
+  const btn = e.target.closest("[data-action]");
+  if (!btn || btn.disabled) return;
+  const action = btn.dataset.action;
+
+  /* Any click while on the creation screen re-renders from ui.creation, which would
+     silently discard whatever's currently typed in the name/team inputs unless we
+     pull their live values in first. */
+  if (!STATE) syncCreationInputs();
+
+  switch (action) {
+    case "create-select-position":
+      ui.creation.position = btn.dataset.pos;
+      render();
+      break;
+    case "create-select-star-tier": {
+      const stars = parseInt(btn.dataset.stars, 10);
+      const tier = CREATION_STAR_TIERS.find(t => t.stars === stars);
+      if (!tier || ui.creation.starTier === stars) break;
+      ui.creation.starTier = stars;
+      ui.creation.pool = tier.pool;
+      ui.creation.stats = newStatBlock();
+      render();
+      break;
+    }
+    case "create-stat-delta": {
+      const stat = btn.dataset.stat, delta = parseInt(btn.dataset.delta, 10);
+      const c = ui.creation;
+      const cur = c.stats[stat];
+      if (delta > 0 && cur < STAT_MAX_START && c.pool > 0) { c.stats[stat] = cur + 1; c.pool -= 1; }
+      if (delta < 0 && cur > STAT_BASE_START) { c.stats[stat] = cur - 1; c.pool += 1; }
+      render();
+      break;
+    }
+    case "create-start": {
+      syncCreationInputs();
+      const c = ui.creation;
+      if (!c.position || c.pool !== 0) return;
+      const name = c.name.trim() || "Alex Carter";
+      const teamName = c.teamName.trim() || DEFAULT_TEAM_NAME;
+      STATE = newCareerState(name, teamName, c.position, { ...c.stats });
+      saveState();
+      render();
+      break;
+    }
+    case "toggle-session": {
+      const id = btn.dataset.session;
+      const idx = ui.selectedSessions.indexOf(id);
+      if (idx >= 0) ui.selectedSessions.splice(idx, 1);
+      else if (ui.selectedSessions.length < 2) ui.selectedSessions.push(id);
+      render();
+      break;
+    }
+    case "select-narrative-choice":
+      ui.narrativeChoiceIdx = parseInt(btn.dataset.choice, 10);
+      render();
+      break;
+    case "hs-advance": {
+      const log = advanceHSWeek(STATE, ui.selectedSessions, ui.narrativeChoiceIdx);
+      saveState();
+      ui.lastLog = log; ui.lastLogKind = "hs"; ui.showingResult = true;
+      render();
+      break;
+    }
+    case "hs-continue":
+      ui.showingResult = false; ui.lastLog = null;
+      render();
+      break;
+    case "recruit-choose": {
+      const idx = parseInt(btn.dataset.offerIdx, 10);
+      const offer = STATE._offers[idx];
+      chooseCollegeOffer(STATE, offer);
+      STATE._offers = null;
+      saveState();
+      render();
+      break;
+    }
+    case "college-advance": {
+      const log = advanceCollegeStep(STATE, ui.selectedSessions, ui.narrativeChoiceIdx);
+      saveState();
+      ui.lastLog = log; ui.lastLogKind = "college"; ui.showingResult = true;
+      render();
+      break;
+    }
+    case "college-continue":
+      ui.showingResult = false; ui.lastLog = null;
+      render();
+      break;
+    case "college-declare":
+      declareForDraft(STATE);
+      ui.lastDraftResult = null;
+      saveState();
+      ui.showingResult = false; ui.lastLog = null;
+      render();
+      break;
+    case "college-return":
+      returnToCollege(STATE);
+      saveState();
+      ui.showingResult = false; ui.lastLog = null;
+      render();
+      break;
+    case "draft-attempt": {
+      const result = runDraftNight(STATE);
+      ui.lastDraftResult = result;
+      saveState();
+      render();
+      break;
+    }
+    case "draft-accept":
+      beginProCareer(STATE, ui.lastDraftResult.team);
+      ui.lastDraftResult = null;
+      saveState();
+      render();
+      break;
+    case "draft-sign-ufa":
+      signUndraftedFreeAgent(STATE);
+      ui.lastDraftResult = null;
+      saveState();
+      render();
+      break;
+    case "draft-go-overseas":
+      goOverseas(STATE);
+      ui.lastDraftResult = null;
+      saveState();
+      render();
+      break;
+    case "draft-retire":
+      retireBeforeProCareer(STATE);
+      ui.lastDraftResult = null;
+      saveState();
+      render();
+      break;
+    case "pro-advance": {
+      const log = advanceProStep(STATE, ui.selectedSessions, ui.narrativeChoiceIdx);
+      saveState();
+      ui.lastLog = log; ui.lastLogKind = "pro"; ui.showingResult = true;
+      render();
+      break;
+    }
+    case "pro-continue":
+      ui.showingResult = false; ui.lastLog = null;
+      saveState();
+      render();
+      break;
+    case "pro-continue-career":
+      continueProCareer(STATE);
+      saveState();
+      ui.showingResult = false; ui.lastLog = null;
+      render();
+      break;
+    case "pro-retire":
+      retireVoluntarily(STATE);
+      saveState();
+      ui.showingResult = false; ui.lastLog = null;
+      render();
+      break;
+    case "restart-career":
+      if (confirm("Start a brand new career? This will erase the current one.")) {
+        STATE = null;
+        localStorage.removeItem(SAVE_KEY);
+        ui.showingResult = false; ui.lastLog = null; ui.lastDraftResult = null;
+        resetCreationUI();
+        render();
+      }
+      break;
+  }
+}
+
+document.addEventListener("DOMContentLoaded", init);
+
+</script>
+</body>
+</html>
